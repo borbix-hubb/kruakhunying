@@ -591,6 +591,48 @@ body {
     box-shadow: 0 6px 20px rgba(255,107,53,0.4);
 }
 
+.btn-secondary {
+    background: #f8f9fa;
+    color: var(--primary-color);
+    border: 1px solid #dee2e6;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    cursor: pointer;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
+    font-size: 0.875rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: all 0.3s;
+}
+
+.btn-secondary:hover {
+    background: #e9ecef;
+    border-color: var(--primary-color);
+    transform: translateY(-1px);
+}
+
+.date-filter {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.date-filter input[type="date"] {
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    font-family: 'Prompt', sans-serif;
+}
+
+.summary-orders {
+    font-size: 0.875rem;
+    color: #666;
+    margin-top: 0.25rem;
+}
+
 /* Modals */
 .modal {
     display: none;
