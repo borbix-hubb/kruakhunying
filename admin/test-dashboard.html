@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e91e63;
+            text-align: center;
+        }
+        .orders-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .orders-table th,
+        .orders-table td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        .orders-table th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        .order-status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .status-pending {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .status-preparing {
+            background: #e3f2fd;
+            color: #1565c0;
+        }
+        .status-completed {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #d81b60;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Test Admin Dashboard</h1>
+        
+        <div id="connectionStatus"></div>
+        
+        <div>
+            <button onclick="loadOrders()">โหลดคำสั่งซื้อ</button>
+            <button onclick="createTestOrder()">สร้างคำสั่งซื้อทดสอบ</button>
+        </div>
+        
+        <div id="ordersContainer">
+            <h2>คำสั่งซื้อ</h2>
+            <table class="orders-table">
+                <thead>
+                    <tr>
+                        <th>Order #</th>
+                        <th>ลูกค้า</th>
+                        <th>รายการ</th>
+                        <th>ราคา</th>
+                        <th>ที่อยู่</th>
+                        <th>สถานะ</th>
+                        <th>เวลา</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 40px;">
+                            กดปุ่ม "โหลดคำสั่งซื้อ" เพื่อดูข้อมูล
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../shared/config/supabase.js"></script>
+    <script>
+        // Check connection on load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const status = document.getElementById('connectionStatus');
+            
+            try {
+                if (!window.supabaseClient) {
+                    status.innerHTML = '<div class="error">❌ Supabase client not initialized!</div>';
+                    return;
+                }
+                
+                // Test connection
+                const { error } = await window.supabaseClient
+                    .from('menu_categories')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    status.innerHTML = `<div class="error">❌ Connection error: ${error.message}</div>`;
+                } else {
+                    status.innerHTML = '<div class="success">✅ Connected to Supabase!</div>';
+                }
+            } catch (e) {
+                status.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        });
+        
+        async function loadOrders() {
+            const tbody = document.getElementById('ordersTableBody');
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">กำลังโหลด...</td></tr>';
+            
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 40px;">
+                                ไม่มีคำสั่งซื้อในระบบ<br>
+                                <small>กดปุ่ม "สร้างคำสั่งซื้อทดสอบ" เพื่อเพิ่มข้อมูล</small>
+                            </td>
+                        </tr>
+                    `;
+                    return;
+                }
+                
+                tbody.innerHTML = data.map(order => {
+                    const customer = order.customers || {};
+                    const items = order.order_items || [];
+                    const itemsList = items.map(item => 
+                        `${item.menu_items?.name || 'Unknown'} x${item.quantity}`
+                    ).join(', ') || 'ไม่มีรายการ';
+                    
+                    const date = new Date(order.created_at).toLocaleString('th-TH');
+                    
+                    return `
+                        <tr>
+                            <td>${order.order_number || order.id}</td>
+                            <td>${customer.name || 'ไม่ระบุ'}<br><small>${customer.phone || '-'}</small></td>
+                            <td>${itemsList}</td>
+                            <td>฿${order.total_amount}</td>
+                            <td>${order.delivery_dorm || customer.dorm || '-'} ${order.delivery_room || customer.room || '-'}</td>
+                            <td><span class="order-status status-${order.status}">${getStatusText(order.status)}</span></td>
+                            <td>${date}</td>
+                        </tr>
+                    `;
+                }).join('');
+                
+                document.getElementById('connectionStatus').innerHTML = 
+                    `<div class="success">✅ พบ ${data.length} คำสั่งซื้อ</div>`;
+                
+            } catch (error) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; color: red;">
+                            Error: ${error.message}
+                        </td>
+                    </tr>
+                `;
+                document.getElementById('connectionStatus').innerHTML = 
+                    `<div class="error">❌ Error loading orders: ${error.message}</div>`;
+            }
+        }
+        
+        function getStatusText(status) {
+            const map = {
+                pending: 'รอดำเนินการ',
+                preparing: 'กำลังทำ',
+                completed: 'เสร็จแล้ว'
+            };
+            return map[status] || status;
+        }
+        
+        async function createTestOrder() {
+            const status = document.getElementById('connectionStatus');
+            status.innerHTML = '<div class="info">กำลังสร้างคำสั่งซื้อทดสอบ...</div>';
+            
+            try {
+                // Get menu items
+                const { data: menuItems, error: menuError } = await window.supabaseClient
+                    .from('menu_items')
+                    .select('*')
+                    .eq('is_available', true)
+                    .limit(2);
+                
+                if (menuError || !menuItems || menuItems.length === 0) {
+                    throw new Error('ไม่พบเมนูในระบบ - กรุณารัน SQL scripts ก่อน');
+                }
+                
+                // Create customer
+                const timestamp = Date.now();
+                const { data: customer, error: custError } = await window.supabaseClient
+                    .from('customers')
+                    .insert([{
+                        name: 'Test Customer ' + timestamp,
+                        phone: '09' + Math.floor(Math.random() * 100000000),
+                        dorm: 'หอ A',
+                        room: '101'
+                    }])
+                    .select()
+                    .single();
+                
+                if (custError) throw custError;
+                
+                // Create order
+                const totalAmount = menuItems.reduce((sum, item) => sum + parseFloat(item.price), 0);
+                const { data: order, error: orderError } = await window.supabaseClient
+                    .from('orders')
+                    .insert([{
+                        order_number: 'ORD' + timestamp.toString().slice(-6),
+                        customer_id: customer.id,
+                        total_amount: totalAmount,
+                        status: 'pending',
+                        payment_method: 'cash',
+                        delivery_dorm: 'หอ A',
+                        delivery_room: '101'
+                    }])
+                    .select()
+                    .single();
+                
+                if (orderError) throw orderError;
+                
+                // Create order items
+                const orderItems = menuItems.map(item => ({
+                    order_id: order.id,
+                    menu_item_id: item.id,
+                    quantity: 1,
+                    price: item.price,
+                    subtotal: item.price
+                }));
+                
+                const { error: itemsError } = await window.supabaseClient
+                    .from('order_items')
+                    .insert(orderItems);
+                
+                if (itemsError) throw itemsError;
+                
+                status.innerHTML = `
+                    <div class="success">
+                        ✅ สร้างคำสั่งซื้อสำเร็จ!<br>
+                        Order: ${order.order_number}<br>
+                        Customer: ${customer.name}<br>
+                        Total: ฿${totalAmount}
+                    </div>
+                `;
+                
+                // Reload orders
+                await loadOrders();
+                
+            } catch (error) {
+                status.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
