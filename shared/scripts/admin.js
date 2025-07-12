@@ -1,27 +1,5 @@
-// Sample order data
-let orders = [
-    {
-        id: 'ORD001',
-        customer: { name: 'สมชาย', phone: '081-234-5678', dorm: 'หอ A', room: '201' },
-        items: [
-            { name: 'ข้าวผัดกุ้ง', quantity: 1, price: 50 },
-            { name: 'ชาเย็น', quantity: 1, price: 25 }
-        ],
-        total: 75,
-        status: 'pending',
-        timestamp: new Date()
-    },
-    {
-        id: 'ORD002', 
-        customer: { name: 'สมหญิง', phone: '082-345-6789', dorm: 'หอ B', room: '305' },
-        items: [
-            { name: 'ผัดไทยกุ้งสด', quantity: 2, price: 45 }
-        ],
-        total: 90,
-        status: 'preparing',
-        timestamp: new Date(Date.now() - 900000)
-    }
-];
+// Store orders data
+let orders = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -35,9 +13,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Set admin name
     document.getElementById('adminName').textContent = user.name || user.email;
     
-    loadOrders();
+    await loadOrdersFromSupabase();
     setupNavigation();
-    setupRealtimeUpdates();
+    setupRealtimeOrderSubscription();
     checkNotifications();
 });
 
@@ -68,17 +46,71 @@ function showSection(sectionId) {
     // Load section specific data
     switch(sectionId) {
         case 'orders':
-            loadOrders();
+            await loadOrdersFromSupabase();
             break;
         case 'menu':
-            loadMenuItems();
+            await loadMenuItems();
             break;
         case 'reports':
-            loadReports();
+            await loadReports();
             break;
         case 'admins':
-            loadAdmins();
+            await loadAdmins();
             break;
+    }
+}
+
+// Load orders from Supabase
+async function loadOrdersFromSupabase() {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('orders')
+            .select(`
+                *,
+                customers (
+                    name,
+                    phone,
+                    dorm,
+                    room
+                ),
+                order_items (
+                    quantity,
+                    price,
+                    subtotal,
+                    menu_items (
+                        name
+                    )
+                )
+            `)
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Transform data to match our format
+        orders = data.map(order => ({
+            id: order.order_number || `ORD${order.id.toString().padStart(6, '0')}`,
+            customer: {
+                name: order.customers?.name || 'ไม่ระบุชื่อ',
+                phone: order.customers?.phone || 'ไม่ระบุ',
+                dorm: order.delivery_dorm || order.customers?.dorm || 'ไม่ระบุ',
+                room: order.delivery_room || order.customers?.room || 'ไม่ระบุ'
+            },
+            items: order.order_items?.map(item => ({
+                name: item.menu_items?.name || 'ไม่ระบุ',
+                quantity: item.quantity,
+                price: item.price
+            })) || [],
+            total: order.total_amount,
+            status: order.status || 'pending',
+            note: order.note || order.delivery_note,
+            timestamp: new Date(order.created_at)
+        }));
+        
+        loadOrders();
+        
+    } catch (error) {
+        console.error('Error loading orders:', error);
+        showNotification('ไม่สามารถโหลดคำสั่งซื้อได้');
     }
 }
 
@@ -96,6 +128,9 @@ function loadOrders(filter = 'all') {
         const row = createOrderRow(order);
         tbody.appendChild(row);
     });
+    
+    // Update notification badge
+    updateNotificationBadge();
 }
 
 function createOrderRow(order) {
@@ -197,19 +232,51 @@ function closeOrderDetail() {
 }
 
 // Update order status
-function updateOrderStatus(orderId, newStatus) {
+async function updateOrderStatus(orderId, newStatus) {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
     
-    order.status = newStatus;
-    loadOrders();
-    
-    // Send notification
-    showNotification(`อัพเดทสถานะ ${order.id} เป็น ${getStatusText(newStatus)}`);
-    
-    // In real app, would update backend and send LINE notification
-    if (newStatus === 'completed') {
-        sendLineNotification(orderId);
+    try {
+        // Find the actual order ID from order_number
+        const { data: orderData, error: findError } = await window.supabaseClient
+            .from('orders')
+            .select('id')
+            .eq('order_number', orderId)
+            .single();
+        
+        if (findError) {
+            // Try with ID directly if order_number fails
+            const numericId = parseInt(orderId.replace('ORD', ''));
+            const { error: updateError } = await window.supabaseClient
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', numericId);
+            
+            if (updateError) throw updateError;
+        } else {
+            const { error: updateError } = await window.supabaseClient
+                .from('orders')
+                .update({ status: newStatus })
+                .eq('id', orderData.id);
+            
+            if (updateError) throw updateError;
+        }
+        
+        // Update local data
+        order.status = newStatus;
+        loadOrders();
+        
+        // Send notification
+        showNotification(`อัพเดทสถานะ ${order.id} เป็น ${getStatusText(newStatus)}`);
+        
+        // Send LINE notification if completed
+        if (newStatus === 'completed') {
+            sendLineNotification(orderId);
+        }
+        
+    } catch (error) {
+        console.error('Error updating order status:', error);
+        showNotification('ไม่สามารถอัพเดทสถานะได้');
     }
 }
 
@@ -228,34 +295,69 @@ function sendLineNotification(orderId) {
 }
 
 // Menu Management
-function loadMenuItems() {
+async function loadMenuItems() {
     const menuList = document.getElementById('menuList');
     
-    // Use sample menu data
-    const menuItems = [
-        { id: 1, name: 'ข้าวผัดกุ้ง', category: 'rice', price: 50, emoji: '🍤' },
-        { id: 2, name: 'ผัดไทยกุ้งสด', category: 'noodle', price: 45, emoji: '🍜' },
-        { id: 3, name: 'ชาเย็น', category: 'drink', price: 25, emoji: '🧋' }
-    ];
-    
-    menuList.innerHTML = menuItems.map(item => `
-        <div class="menu-item-card">
-            <div class="menu-item-info">
-                <div>
-                    <h4>${item.name}</h4>
-                    <p>฿${item.price} - ${getCategoryText(item.category)}</p>
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('menu_items')
+            .select(`
+                *,
+                menu_categories (
+                    name,
+                    slug
+                )
+            `)
+            .order('category_id');
+        
+        if (error) throw error;
+        
+        menuList.innerHTML = data.map(item => `
+            <div class="menu-item-card">
+                <div class="menu-item-info">
+                    <div>
+                        <h4>${item.name}</h4>
+                        <p>฿${item.price} - ${item.menu_categories?.name || 'ไม่ระบุหมวดหมู่'}</p>
+                        ${item.is_available ? '' : '<span class="unavailable-badge">ไม่พร้อมขาย</span>'}
+                    </div>
+                </div>
+                <div class="menu-item-actions">
+                    <button class="action-btn" onclick="editMenuItem(${item.id})">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="action-btn" onclick="toggleMenuAvailability(${item.id}, ${!item.is_available})">
+                        <i class="fas fa-${item.is_available ? 'eye-slash' : 'eye'}"></i>
+                    </button>
+                    <button class="action-btn" onclick="deleteMenuItem(${item.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </div>
             </div>
-            <div class="menu-item-actions">
-                <button class="action-btn" onclick="editMenuItem(${item.id})">
-                    <i class="fas fa-edit"></i>
-                </button>
-                <button class="action-btn" onclick="deleteMenuItem(${item.id})">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `).join('');
+        
+    } catch (error) {
+        console.error('Error loading menu items:', error);
+        showNotification('ไม่สามารถโหลดเมนูได้');
+    }
+}
+
+// Toggle menu item availability
+async function toggleMenuAvailability(itemId, available) {
+    try {
+        const { error } = await window.supabaseClient
+            .from('menu_items')
+            .update({ is_available: available })
+            .eq('id', itemId);
+        
+        if (error) throw error;
+        
+        showNotification(available ? 'เปิดขายเมนูแล้ว' : 'ปิดขายเมนูแล้ว');
+        loadMenuItems();
+        
+    } catch (error) {
+        console.error('Error toggling availability:', error);
+        showNotification('ไม่สามารถเปลี่ยนสถานะได้');
+    }
 }
 
 function getCategoryText(category) {
@@ -277,44 +379,89 @@ function closeAddMenuModal() {
     document.getElementById('addMenuModal').classList.remove('active');
 }
 
-function addMenuItem(event) {
+async function addMenuItem(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
-    const newItem = {
-        name: formData.get('name'),
-        category: formData.get('category'),
-        price: formData.get('price'),
-        description: formData.get('description'),
-        emoji: formData.get('emoji')
-    };
     
-    // In real app, would save to backend
-    console.log('New menu item:', newItem);
-    
-    closeAddMenuModal();
-    showNotification('เพิ่มเมนูใหม่เรียบร้อยแล้ว');
-    loadMenuItems();
+    try {
+        // Get category ID from slug
+        const { data: category, error: catError } = await window.supabaseClient
+            .from('menu_categories')
+            .select('id')
+            .eq('slug', formData.get('category'))
+            .single();
+        
+        if (catError) throw catError;
+        
+        const { error } = await window.supabaseClient
+            .from('menu_items')
+            .insert([{
+                name: formData.get('name'),
+                category_id: category.id,
+                price: parseFloat(formData.get('price')),
+                description: formData.get('description'),
+                is_available: true
+            }]);
+        
+        if (error) throw error;
+        
+        closeAddMenuModal();
+        showNotification('เพิ่มเมนูใหม่เรียบร้อยแล้ว');
+        await loadMenuItems();
+        
+    } catch (error) {
+        console.error('Error adding menu item:', error);
+        showNotification('ไม่สามารถเพิ่มเมนูได้');
+    }
 }
 
 // Reports
 let salesChart = null;
 
-function loadReports() {
-    // Generate sample data for the last 7 days
-    const labels = [];
-    const salesData = [];
-    const ordersData = [];
-    
-    for (let i = 6; i >= 0; i--) {
-        const date = new Date();
-        date.setDate(date.getDate() - i);
-        labels.push(date.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric' }));
+async function loadReports() {
+    try {
+        // Get orders from last 7 days
+        const sevenDaysAgo = new Date();
+        sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
         
-        // Generate random sales data
-        salesData.push(Math.floor(Math.random() * 3000) + 1000);
-        ordersData.push(Math.floor(Math.random() * 30) + 10);
-    }
+        const { data: ordersData, error } = await window.supabaseClient
+            .from('orders')
+            .select('created_at, total_amount, status')
+            .gte('created_at', sevenDaysAgo.toISOString())
+            .order('created_at');
+        
+        if (error) throw error;
+        
+        // Group by date
+        const dailyData = {};
+        const labels = [];
+        const salesData = [];
+        const orderCounts = [];
+        
+        // Initialize last 7 days
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            const dateKey = date.toISOString().split('T')[0];
+            dailyData[dateKey] = { sales: 0, orders: 0 };
+            labels.push(date.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric' }));
+        }
+        
+        // Aggregate data
+        ordersData.forEach(order => {
+            const dateKey = order.created_at.split('T')[0];
+            if (dailyData[dateKey]) {
+                dailyData[dateKey].sales += parseFloat(order.total_amount);
+                dailyData[dateKey].orders += 1;
+            }
+        });
+        
+        // Convert to arrays
+        Object.values(dailyData).forEach(day => {
+            salesData.push(day.sales);
+            orderCounts.push(day.orders);
+        });
     
     // Load sales chart
     const ctx = document.getElementById('salesChart');
@@ -338,7 +485,7 @@ function loadReports() {
                     yAxisID: 'y'
                 }, {
                     label: 'จำนวนออเดอร์',
-                    data: ordersData,
+                    data: orderCounts,
                     borderColor: '#FFD166',
                     backgroundColor: 'rgba(255, 209, 102, 0.1)',
                     tension: 0.4,
@@ -422,40 +569,92 @@ function loadReports() {
     }
     
     // Load category chart
-    loadCategoryChart();
+    await loadCategoryChart();
     
     // Load popular items
-    const popularList = document.querySelector('.popular-list');
-    if (popularList) {
-        popularList.innerHTML = `
-            <div class="popular-item">
-                <span>1. ข้าวผัดกุ้ง</span>
-                <span>150 จาน</span>
-            </div>
-            <div class="popular-item">
-                <span>2. ผัดไทยกุ้งสด</span>
-                <span>120 จาน</span>
-            </div>
-            <div class="popular-item">
-                <span>3. กะเพราหมูสับ</span>
-                <span>95 จาน</span>
-            </div>
-            <div class="popular-item">
-                <span>4. ข้าวผัดหมู</span>
-                <span>87 จาน</span>
-            </div>
-            <div class="popular-item">
-                <span>5. ชาเย็น</span>
-                <span>156 แก้ว</span>
-            </div>
-        `;
+    await loadPopularItems();
+    
+    } catch (error) {
+        console.error('Error loading reports:', error);
+        showNotification('ไม่สามารถโหลดรายงานได้');
+    }
+}
+
+// Load popular items
+async function loadPopularItems() {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('order_items')
+            .select(`
+                menu_item_id,
+                menu_items (name),
+                quantity
+            `)
+            .order('quantity', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Aggregate by menu item
+        const itemCounts = {};
+        data.forEach(item => {
+            const name = item.menu_items?.name || 'Unknown';
+            itemCounts[name] = (itemCounts[name] || 0) + item.quantity;
+        });
+        
+        // Sort and get top 5
+        const sortedItems = Object.entries(itemCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 5);
+        
+        const popularList = document.querySelector('.popular-list');
+        if (popularList) {
+            popularList.innerHTML = sortedItems.map((item, index) => `
+                <div class="popular-item">
+                    <span>${index + 1}. ${item[0]}</span>
+                    <span>${item[1]} จาน</span>
+                </div>
+            `).join('');
+        }
+        
+    } catch (error) {
+        console.error('Error loading popular items:', error);
     }
 }
 
 // Category sales chart
 let categoryChart = null;
 
-function loadCategoryChart() {
+async function loadCategoryChart() {
+    try {
+        // Get category sales data
+        const { data, error } = await window.supabaseClient
+            .from('order_items')
+            .select(`
+                quantity,
+                subtotal,
+                menu_items (
+                    menu_categories (
+                        name
+                    )
+                )
+            `);
+        
+        if (error) throw error;
+        
+        // Aggregate by category
+        const categoryTotals = {};
+        data.forEach(item => {
+            const category = item.menu_items?.menu_categories?.name || 'อื่นๆ';
+            categoryTotals[category] = (categoryTotals[category] || 0) + parseFloat(item.subtotal || 0);
+        });
+        
+        // Calculate percentages
+        const totalSales = Object.values(categoryTotals).reduce((sum, val) => sum + val, 0);
+        const categoryData = Object.entries(categoryTotals).map(([name, value]) => ({
+            name,
+            value,
+            percentage: totalSales > 0 ? Math.round((value / totalSales) * 100) : 0
+        }));
     const categoryCanvas = document.createElement('canvas');
     categoryCanvas.id = 'categoryChart';
     categoryCanvas.style.maxHeight = '300px';
@@ -476,14 +675,16 @@ function loadCategoryChart() {
         categoryChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
-                labels: ['ข้าว', 'เส้น', 'กับข้าว', 'เครื่องดื่ม'],
+                labels: categoryData.map(c => c.name),
                 datasets: [{
-                    data: [45, 25, 20, 10],
+                    data: categoryData.map(c => c.percentage),
                     backgroundColor: [
                         '#FF6B35',
                         '#FF8C42',
                         '#FFD166',
-                        '#FFC947'
+                        '#FFC947',
+                        '#FFB547',
+                        '#FFA347'
                     ],
                     borderWidth: 2,
                     borderColor: '#fff'
@@ -543,36 +744,57 @@ function loadCategoryChart() {
             }
         });
     }
+    
+    } catch (error) {
+        console.error('Error loading category chart:', error);
+    }
 }
 
-// Realtime updates simulation
-function setupRealtimeUpdates() {
-    // Simulate new orders every 30 seconds
-    setInterval(() => {
-        const random = Math.random();
-        if (random > 0.7) {
-            const newOrder = {
-                id: `ORD${String(orders.length + 1).padStart(3, '0')}`,
-                customer: {
-                    name: `ลูกค้า ${orders.length + 1}`,
-                    phone: '08X-XXX-XXXX',
-                    dorm: 'หอ C',
-                    room: Math.floor(Math.random() * 500) + 100
-                },
-                items: [
-                    { name: 'ข้าวผัดหมู', quantity: 1, price: 45 }
-                ],
-                total: 45,
-                status: 'pending',
-                timestamp: new Date()
-            };
-            
-            orders.unshift(newOrder);
-            loadOrders();
-            showNotification('มีคำสั่งซื้อใหม่!');
-            updateNotificationBadge();
-        }
-    }, 30000);
+// Setup realtime order subscription
+function setupRealtimeOrderSubscription() {
+    // Subscribe to INSERT events on orders table
+    const subscription = window.supabaseClient
+        .channel('orders-channel')
+        .on('postgres_changes', 
+            { 
+                event: 'INSERT', 
+                schema: 'public', 
+                table: 'orders' 
+            }, 
+            async (payload) => {
+                console.log('New order received:', payload);
+                
+                // Reload orders to get complete data with relations
+                await loadOrdersFromSupabase();
+                
+                // Show notification
+                showNotification('มีคำสั่งซื้อใหม่!');
+                
+                // Play sound if available
+                try {
+                    const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmwhBSuBzvLbiTYIG2m98OScTgwOUarm7blmFgU7k9n1unEiBC13yO/eizEIHWq+8+OWT');
+                    audio.play();
+                } catch (e) {
+                    console.log('Could not play notification sound');
+                }
+            }
+        )
+        .on('postgres_changes',
+            {
+                event: 'UPDATE',
+                schema: 'public',
+                table: 'orders'
+            },
+            async (payload) => {
+                console.log('Order updated:', payload);
+                // Reload orders to get updated data
+                await loadOrdersFromSupabase();
+            }
+        )
+        .subscribe();
+    
+    // Store subscription for cleanup if needed
+    window.ordersSubscription = subscription;
 }
 
 // Update notification badge
