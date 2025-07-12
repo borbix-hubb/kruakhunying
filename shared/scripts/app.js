@@ -203,14 +203,14 @@ function searchMenu(query) {
 }
 
 // Add to cart
-function addToCart(itemId) {
+function addToCart(itemId, note = '') {
     const item = menuData.find(i => i.id === itemId);
-    const existingItem = cart.find(i => i.id === itemId);
+    const existingItem = cart.find(i => i.id === itemId && i.note === note);
     
     if (existingItem) {
         existingItem.quantity++;
     } else {
-        cart.push({ ...item, quantity: 1 });
+        cart.push({ ...item, quantity: 1, note: note });
     }
     
     updateCartUI();
@@ -232,16 +232,17 @@ function updateCartUI() {
         return;
     }
     
-    cartItems.innerHTML = cart.map(item => `
+    cartItems.innerHTML = cart.map((item, index) => `
         <div class="cart-item">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
+                ${item.note ? `<div class="cart-item-note" style="font-size: 12px; color: #666;">📝 ${item.note}</div>` : ''}
                 <div class="cart-item-price">฿${item.price}</div>
             </div>
             <div class="cart-item-quantity">
-                <button class="quantity-btn" onclick="updateQuantity(${item.id}, -1)">-</button>
+                <button class="quantity-btn" onclick="updateQuantity(${index}, -1)">-</button>
                 <span>${item.quantity}</span>
-                <button class="quantity-btn" onclick="updateQuantity(${item.id}, 1)">+</button>
+                <button class="quantity-btn" onclick="updateQuantity(${index}, 1)">+</button>
             </div>
         </div>
     `).join('');
@@ -251,13 +252,13 @@ function updateCartUI() {
 }
 
 // Update quantity
-function updateQuantity(itemId, change) {
-    const item = cart.find(i => i.id === itemId);
+function updateQuantity(index, change) {
+    const item = cart[index];
     if (!item) return;
     
     item.quantity += change;
     if (item.quantity <= 0) {
-        cart = cart.filter(i => i.id !== itemId);
+        cart.splice(index, 1);
     }
     
     updateCartUI();
@@ -284,6 +285,10 @@ function showItemDetail(item) {
                 <span class="quantity-display" id="detailQuantity">1</span>
                 <button onclick="updateDetailQuantity(1)">+</button>
             </div>
+            <div class="form-group">
+                <label>หมายเหตุ (ถ้ามี)</label>
+                <input type="text" id="itemNote" placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
+            </div>
             <button class="checkout-btn" onclick="addDetailToCart(${item.id})">
                 <i class="fas fa-cart-plus"></i> เพิ่มในตะกร้า
             </button>
@@ -303,12 +308,13 @@ function updateDetailQuantity(change) {
 // Add from detail to cart
 function addDetailToCart(itemId) {
     const item = menuData.find(i => i.id === itemId);
-    const existingItem = cart.find(i => i.id === itemId);
+    const note = document.getElementById('itemNote').value.trim();
+    const existingItem = cart.find(i => i.id === itemId && i.note === note);
     
     if (existingItem) {
         existingItem.quantity += window.currentDetailQuantity;
     } else {
-        cart.push({ ...item, quantity: window.currentDetailQuantity });
+        cart.push({ ...item, quantity: window.currentDetailQuantity, note: note });
     }
     
     updateCartUI();

@@ -194,7 +194,7 @@ function loadOrders(filter = 'all') {
         // Show empty message
         tbody.innerHTML = `
             <tr>
-                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
                     <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
                     ไม่มีคำสั่งซื้อ${filter !== 'all' ? 'ในสถานะนี้' : 'ในระบบ'}
                     <br>
@@ -219,13 +219,15 @@ function loadOrders(filter = 'all') {
 function createOrderRow(order) {
     const tr = document.createElement('tr');
     const itemsList = order.items.map(item => `${item.name} x${item.quantity}`).join(', ');
+    const paymentMethod = order.paymentMethod || 'เงินสด';
     
     tr.innerHTML = `
         <td>${order.id}</td>
         <td>${order.customer.name}</td>
         <td>${itemsList}</td>
         <td>฿${order.total}</td>
-        <td>${order.customer.dorm} ${order.customer.room}</td>
+        <td>${getDormName(order.customer.dorm)} ${order.customer.room}</td>
+        <td>${getPaymentMethodText(paymentMethod)}</td>
         <td><span class="order-status status-${order.status}">${getStatusText(order.status)}</span></td>
         <td>
             <div class="action-buttons">
@@ -256,6 +258,15 @@ function getStatusText(status) {
         completed: 'เสร็จแล้ว'
     };
     return statusMap[status] || status;
+}
+
+function getPaymentMethodText(method) {
+    const methodMap = {
+        cash: 'เงินสด',
+        promptpay: 'PromptPay',
+        transfer: 'โอนเงิน'
+    };
+    return methodMap[method] || method;
 }
 
 // View order detail
@@ -909,6 +920,9 @@ function setupRealtimeOrderSubscription() {
                 if (ordersSection && ordersSection.style.display !== 'none') {
                     loadOrders();
                 }
+                
+                // Update dashboard stats immediately
+                await updateDashboardStats();
                 
                 // Show notification
                 showNotification('มีคำสั่งซื้อใหม่!');
