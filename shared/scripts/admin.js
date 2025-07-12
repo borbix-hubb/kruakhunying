@@ -163,6 +163,7 @@ async function loadOrdersFromSupabase() {
             status: order.status || 'pending',
             note: order.note || order.delivery_note,
             paymentMethod: order.payment_method || 'cash',
+            deliveryMethod: order.delivery_method || 'delivery',
             timestamp: new Date(order.created_at)
         }));
         
@@ -240,7 +241,7 @@ function createOrderRow(order) {
         <td>${order.customer.name}</td>
         <td>${itemsList}</td>
         <td>฿${order.total}</td>
-        <td>${getDormName(order.customer.dorm)} ${order.customer.room}</td>
+        <td>${order.deliveryMethod === 'pickup' ? '<span style="color: #FF6B35; font-weight: bold;">มารับเอง</span>' : `${getDormName(order.customer.dorm)} ${order.customer.room}`}</td>
         <td>${getPaymentMethodText(paymentMethod)}</td>
         <td><span class="order-status status-${order.status}">${getStatusText(order.status)}</span></td>
         <td>

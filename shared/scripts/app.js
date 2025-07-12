@@ -576,7 +576,8 @@ async function submitOrder(event) {
                 note: customerData.note || null,
                 total_amount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
                 status: 'pending',
-                payment_method: selectedPaymentMethod
+                payment_method: selectedPaymentMethod,
+                delivery_method: selectedDeliveryMethod
             }])
             .select()
             .single();
@@ -710,12 +711,34 @@ function showOrderSummary(orderData) {
                 </div>
             </div>
             
-            <div class="delivery-info">
+            <div class="delivery-options">
+                <h4>วิธีการรับอาหาร</h4>
+                <div class="delivery-methods">
+                    <button type="button" class="delivery-method active" onclick="selectDeliveryMethod('delivery')" id="deliveryBtn">
+                        <i class="fas fa-motorcycle"></i>
+                        <span>ส่งที่ห้อง</span>
+                    </button>
+                    <button type="button" class="delivery-method" onclick="selectDeliveryMethod('pickup')" id="pickupBtn">
+                        <i class="fas fa-shopping-bag"></i>
+                        <span>มารับเอง</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="delivery-info" id="deliveryInfo">
                 <h4>ข้อมูลจัดส่ง</h4>
                 <p><i class="fas fa-user"></i> ${orderData.customer.name}</p>
                 <p><i class="fas fa-phone"></i> ${orderData.customer.phone}</p>
                 <p><i class="fas fa-building"></i> ${getDormName(orderData.customer.dorm)} ห้อง ${orderData.customer.room}</p>
                 ${orderData.customer.note ? `<p><i class="fas fa-sticky-note"></i> ${orderData.customer.note}</p>` : ''}
+            </div>
+            
+            <div class="pickup-info" id="pickupInfo" style="display: none;">
+                <h4>ข้อมูลการรับอาหาร</h4>
+                <p><i class="fas fa-user"></i> ${orderData.customer.name}</p>
+                <p><i class="fas fa-phone"></i> ${orderData.customer.phone}</p>
+                <p><i class="fas fa-store"></i> รับที่ร้านครัวคุณหญิง</p>
+                <p><i class="fas fa-clock"></i> เวลารับอาหารประมาณ 15-20 นาที</p>
             </div>
         </div>
         
@@ -789,6 +812,28 @@ function sendToLine() {
 // Select payment method
 // Store selected payment method
 let selectedPaymentMethod = 'promptpay'; // Default to promptpay
+let selectedDeliveryMethod = 'delivery'; // Default to delivery
+
+// Select delivery method
+function selectDeliveryMethod(method) {
+    selectedDeliveryMethod = method;
+    const deliveryBtn = document.getElementById('deliveryBtn');
+    const pickupBtn = document.getElementById('pickupBtn');
+    const deliveryInfo = document.getElementById('deliveryInfo');
+    const pickupInfo = document.getElementById('pickupInfo');
+    
+    if (method === 'delivery') {
+        deliveryBtn.classList.add('active');
+        pickupBtn.classList.remove('active');
+        deliveryInfo.style.display = 'block';
+        pickupInfo.style.display = 'none';
+    } else {
+        deliveryBtn.classList.remove('active');
+        pickupBtn.classList.add('active');
+        deliveryInfo.style.display = 'none';
+        pickupInfo.style.display = 'block';
+    }
+}
 
 function selectPaymentMethod(method) {
     selectedPaymentMethod = method; // Store the selected method
