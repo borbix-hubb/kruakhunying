@@ -475,7 +475,7 @@ function generateLineMessage(orderData) {
     
 ชื่อ: ${orderData.customer.name}
 โทร: ${orderData.customer.phone}
-หอ: ${orderData.customer.dorm}
+ตึก: ${getDormName(orderData.customer.dorm)}
 ห้อง: ${orderData.customer.room}
 
 รายการอาหาร:
@@ -553,7 +553,7 @@ function showOrderSummary(orderData) {
                 <h4>ข้อมูลจัดส่ง</h4>
                 <p><i class="fas fa-user"></i> ${orderData.customer.name}</p>
                 <p><i class="fas fa-phone"></i> ${orderData.customer.phone}</p>
-                <p><i class="fas fa-home"></i> ${orderData.customer.dorm} ห้อง ${orderData.customer.room}</p>
+                <p><i class="fas fa-building"></i> ${getDormName(orderData.customer.dorm)} ห้อง ${orderData.customer.room}</p>
                 ${orderData.customer.note ? `<p><i class="fas fa-sticky-note"></i> ${orderData.customer.note}</p>` : ''}
             </div>
         </div>
