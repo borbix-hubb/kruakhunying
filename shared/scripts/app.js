@@ -294,8 +294,8 @@ function showItemOptions(itemId) {
                 <div class="form-group" style="margin-top: 1.5rem;">
                     <label>ตัวเลือกพิเศษ</label>
                     <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
-                        <button type="button" class="special-option-btn" onclick="toggleSpecialOption()" id="specialOptionBtn" style="flex: 1; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 10px; background: white; cursor: pointer; font-size: 1rem;">
-                            <i class="fas fa-plus-circle"></i> พิเศษ +10 บาท
+                        <button type="button" class="special-option-btn" onclick="addSpecialToCart(${itemId})" style="flex: 1; padding: 0.75rem; border: 2px solid #FF6B35; border-radius: 10px; background: #FF6B35; color: white; cursor: pointer; font-size: 1rem;">
+                            <i class="fas fa-star"></i> พิเศษ +10 บาท - เพิ่มเลย!
                         </button>
                     </div>
                 </div>
@@ -326,22 +326,19 @@ function selectOptionWithNote(itemId, optionName, price) {
     closeItemOptionsModal();
 }
 
-// Toggle special option
-function toggleSpecialOption() {
-    const btn = document.getElementById('specialOptionBtn');
-    window.isSpecialOptionSelected = !window.isSpecialOptionSelected;
+// Add special option directly to cart
+function addSpecialToCart(itemId) {
+    const item = menuData.find(i => i.id === itemId);
+    if (!item) return;
     
-    if (window.isSpecialOptionSelected) {
-        btn.style.backgroundColor = '#FF6B35';
-        btn.style.color = 'white';
-        btn.style.borderColor = '#FF6B35';
-        btn.innerHTML = '<i class="fas fa-check-circle"></i> พิเศษ +10 บาท (เลือกแล้ว)';
-    } else {
-        btn.style.backgroundColor = 'white';
-        btn.style.color = '#333';
-        btn.style.borderColor = '#e0e0e0';
-        btn.innerHTML = '<i class="fas fa-plus-circle"></i> พิเศษ +10 บาท';
-    }
+    const note = document.getElementById('itemNote').value.trim();
+    const defaultOption = item.options[0]; // Use first available option
+    const specialPrice = defaultOption.price + 10;
+    const specialNote = note ? `${note}, พิเศษ +10 บาท` : 'พิเศษ +10 บาท';
+    
+    addToCart(itemId, defaultOption.name, specialPrice, specialNote);
+    closeItemOptionsModal();
+    showNotification('เพิ่มเมนูพิเศษในตะกร้าแล้ว!');
 }
 
 // Close item options modal
