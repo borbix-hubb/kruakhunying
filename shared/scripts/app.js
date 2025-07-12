@@ -1,6 +1,22 @@
 // Menu Data
 let menuData = [];
 
+// Check if user selected "Other" building
+function checkOtherBuilding(select) {
+    const noteRequired = document.getElementById('noteRequired');
+    const noteTextarea = document.querySelector('textarea[name="note"]');
+    
+    if (select.value === 'other') {
+        noteRequired.style.display = 'inline';
+        noteTextarea.required = true;
+        noteTextarea.placeholder = 'กรุณาระบุที่อยู่ของคุณ (จำเป็น)';
+    } else {
+        noteRequired.style.display = 'none';
+        noteTextarea.required = false;
+        noteTextarea.placeholder = 'ระบุที่อยู่หรือรายละเอียดเพิ่มเติม';
+    }
+}
+
 // Load menu from Supabase on page load
 async function loadMenuFromSupabase() {
     try {
@@ -636,7 +652,8 @@ function checkSavedAddress() {
             <h5>ที่อยู่เดิม</h5>
             <p><i class="fas fa-user"></i> ${customer.name}</p>
             <p><i class="fas fa-phone"></i> ${customer.phone}</p>
-            <p><i class="fas fa-home"></i> ${getDormName(customer.dorm)} ห้อง ${customer.room}</p>
+            <p><i class="fas fa-building"></i> ${getDormName(customer.dorm)} ห้อง ${customer.room}</p>
+            ${customer.note ? `<p><i class="fas fa-sticky-note"></i> ${customer.note}</p>` : ''}
             <button type="button" class="edit-btn" onclick="useNewAddress()">
                 <i class="fas fa-edit"></i> แก้ไขที่อยู่
             </button>
@@ -659,6 +676,12 @@ function checkSavedAddress() {
 
 function getDormName(dormValue) {
     const dormMap = {
+        'building-1': 'ตึก 1',
+        'building-a': 'ตึก A',
+        'building-b': 'ตึก B',
+        'building-3': 'ตึก 3',
+        'other': 'อื่นๆ',
+        // Keep old values for backward compatibility
         'dorm-a': 'หอ A',
         'dorm-b': 'หอ B', 
         'dorm-c': 'หอ C'
