@@ -148,10 +148,146 @@ body {
     align-items: center;
     gap: 0.5rem;
     cursor: pointer;
+    position: relative;
 }
 
 .user-menu i {
     font-size: 2rem;
+}
+
+.user-menu .fa-chevron-down {
+    font-size: 0.8rem;
+}
+
+/* Dropdown Menus */
+.notification-dropdown {
+    position: relative;
+}
+
+.notification-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 300px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    margin-top: 10px;
+    display: none;
+    z-index: 1000;
+}
+
+.notification-menu.active {
+    display: block;
+}
+
+.notification-header {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.notification-header h3 {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.notification-header button {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.notification-list {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.notification-item {
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notification-item:hover {
+    background: var(--light-color);
+}
+
+.no-notifications {
+    padding: 2rem;
+    text-align: center;
+    color: #999;
+}
+
+.user-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    width: 200px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    margin-top: 10px;
+    display: none;
+    z-index: 1000;
+}
+
+.user-dropdown.active {
+    display: block;
+}
+
+.user-dropdown a {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    color: var(--dark-color);
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.user-dropdown a:hover {
+    background: var(--light-color);
+}
+
+.user-dropdown a:first-child {
+    border-radius: 10px 10px 0 0;
+}
+
+.user-dropdown a:last-child {
+    border-radius: 0 0 10px 10px;
+}
+
+/* Admin Management */
+.admin-list table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.admin-list th,
+.admin-list td {
+    text-align: left;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+}
+
+.admin-list th {
+    font-weight: 600;
+    color: #666;
+    border-bottom: 2px solid var(--light-color);
+}
+
+.status-active {
+    color: #4CAF50;
+}
+
+.status-inactive {
+    color: #F44336;
 }
 
 /* Stats Grid */

@@ -24,10 +24,21 @@ let orders = [
 ];
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    // Check authentication
+    const user = await getCurrentSession();
+    if (!user) {
+        window.location.href = './login.html';
+        return;
+    }
+    
+    // Set admin name
+    document.getElementById('adminName').textContent = user.name || user.email;
+    
     loadOrders();
     setupNavigation();
     setupRealtimeUpdates();
+    checkNotifications();
 });
 
 // Navigation
@@ -64,6 +75,9 @@ function showSection(sectionId) {
             break;
         case 'reports':
             loadReports();
+            break;
+        case 'admins':
+            loadAdmins();
             break;
     }
 }
@@ -608,4 +622,173 @@ document.querySelectorAll('.filter-btn').forEach(btn => {
         
         loadOrders(filterMap[btn.textContent] || 'all');
     });
+});
+
+// Notification functions
+function toggleNotifications() {
+    const menu = document.getElementById('notificationMenu');
+    menu.classList.toggle('active');
+    
+    // Close user menu if open
+    document.getElementById('userDropdown').classList.remove('active');
+}
+
+function clearNotifications() {
+    const list = document.getElementById('notificationList');
+    list.innerHTML = '<p class="no-notifications">ไม่มีการแจ้งเตือนใหม่</p>';
+    updateNotificationCount(0);
+}
+
+function updateNotificationCount(count) {
+    const badge = document.getElementById('notificationCount');
+    badge.textContent = count;
+    badge.style.display = count > 0 ? 'flex' : 'none';
+}
+
+function checkNotifications() {
+    // Check for new orders
+    const pendingOrders = orders.filter(o => o.status === 'pending').length;
+    updateNotificationCount(pendingOrders);
+    
+    if (pendingOrders > 0) {
+        const list = document.getElementById('notificationList');
+        list.innerHTML = `
+            <div class="notification-item" onclick="showSection('orders')">
+                <strong>คำสั่งซื้อใหม่</strong>
+                <p>มี ${pendingOrders} คำสั่งซื้อรอดำเนินการ</p>
+            </div>
+        `;
+    }
+}
+
+// User menu functions
+function toggleUserMenu() {
+    const dropdown = document.getElementById('userDropdown');
+    dropdown.classList.toggle('active');
+    
+    // Close notification menu if open
+    document.getElementById('notificationMenu').classList.remove('active');
+}
+
+function viewProfile() {
+    // In future, show profile modal
+    alert('ฟีเจอร์โปรไฟล์กำลังพัฒนา');
+}
+
+async function logout() {
+    if (confirm('ต้องการออกจากระบบ?')) {
+        const result = await adminLogout();
+        if (result.success) {
+            window.location.href = './login.html';
+        }
+    }
+}
+
+// Admin management functions
+async function loadAdmins() {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('admin_users')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        
+        const tbody = document.getElementById('adminTableBody');
+        tbody.innerHTML = data.map(admin => `
+            <tr>
+                <td>${admin.name || '-'}</td>
+                <td>${admin.email}</td>
+                <td>${admin.role === 'super_admin' ? 'Super Admin' : 'Admin'}</td>
+                <td>
+                    <span class="status-${admin.is_active ? 'active' : 'inactive'}">
+                        ${admin.is_active ? 'ใช้งาน' : 'ระงับ'}
+                    </span>
+                </td>
+                <td>${admin.last_login ? new Date(admin.last_login).toLocaleDateString('th-TH') : '-'}</td>
+                <td>
+                    <button class="action-btn" onclick="toggleAdminStatus('${admin.id}', ${!admin.is_active})">
+                        <i class="fas fa-${admin.is_active ? 'ban' : 'check'}"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    } catch (error) {
+        console.error('Error loading admins:', error);
+    }
+}
+
+function showAddAdminModal() {
+    document.getElementById('addAdminModal').classList.add('active');
+}
+
+function closeAddAdminModal() {
+    document.getElementById('addAdminModal').classList.remove('active');
+    document.getElementById('addAdminForm').reset();
+}
+
+async function addNewAdmin(event) {
+    event.preventDefault();
+    
+    const formData = new FormData(event.target);
+    const email = formData.get('email');
+    const password = formData.get('password');
+    const name = formData.get('name');
+    const role = formData.get('role');
+    
+    try {
+        // Create auth user
+        const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
+            email,
+            password
+        });
+        
+        if (authError) throw authError;
+        
+        // Create admin record
+        const { data, error } = await window.supabaseClient
+            .from('admin_users')
+            .insert([{
+                email,
+                name,
+                role,
+                password_hash: 'managed_by_supabase_auth'
+            }])
+            .select()
+            .single();
+        
+        if (error) throw error;
+        
+        closeAddAdminModal();
+        showNotification('เพิ่ม Admin ใหม่เรียบร้อยแล้ว');
+        loadAdmins();
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function toggleAdminStatus(adminId, activate) {
+    try {
+        const { error } = await window.supabaseClient
+            .from('admin_users')
+            .update({ is_active: activate })
+            .eq('id', adminId);
+        
+        if (error) throw error;
+        
+        showNotification(activate ? 'เปิดใช้งาน Admin แล้ว' : 'ระงับการใช้งาน Admin แล้ว');
+        loadAdmins();
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', (e) => {
+    if (!e.target.closest('.notification-dropdown')) {
+        document.getElementById('notificationMenu').classList.remove('active');
+    }
+    if (!e.target.closest('.user-menu')) {
+        document.getElementById('userDropdown').classList.remove('active');
+    }
 });

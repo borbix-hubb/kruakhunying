@@ -3,7 +3,7 @@
 // Admin login
 async function adminLogin(email, password) {
     try {
-        const { data, error } = await window.window.supabaseClient.auth.signInWithPassword({
+        const { data, error } = await window.supabaseClient.auth.signInWithPassword({
             email,
             password
         });
