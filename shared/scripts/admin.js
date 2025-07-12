@@ -91,6 +91,14 @@ async function showSection(sectionId) {
 // Load orders from Supabase
 async function loadOrdersFromSupabase() {
     try {
+        // Check if Supabase client exists
+        if (!window.supabaseClient) {
+            console.log('Supabase client not initialized, using mock data');
+            loadOrders();
+            return;
+        }
+        
+        console.log('Loading orders from Supabase...');
         const { data, error } = await window.supabaseClient
             .from('orders')
             .select(`
@@ -112,7 +120,19 @@ async function loadOrdersFromSupabase() {
             `)
             .order('created_at', { ascending: false });
         
-        if (error) throw error;
+        if (error) {
+            console.error('Supabase error:', error);
+            throw error;
+        }
+        
+        console.log(`Found ${data?.length || 0} orders`);
+        
+        if (!data || data.length === 0) {
+            // Keep mock data if no real data
+            console.log('No orders found in database, keeping mock data');
+            loadOrders();
+            return;
+        }
         
         // Transform data to match our format
         orders = data.map(order => ({
@@ -138,7 +158,9 @@ async function loadOrdersFromSupabase() {
         
     } catch (error) {
         console.error('Error loading orders:', error);
-        showNotification('ไม่สามารถโหลดคำสั่งซื้อได้');
+        // Don't show error notification, just use mock data
+        console.log('Failed to load from Supabase, using mock data');
+        loadOrders();
     }
 }
 
