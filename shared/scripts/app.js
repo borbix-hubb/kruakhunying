@@ -245,6 +245,9 @@ function checkout() {
     
     document.getElementById('orderModal').classList.add('active');
     toggleCart();
+    
+    // Check for saved address
+    checkSavedAddress();
 }
 
 // Close order modal
@@ -270,6 +273,9 @@ function submitOrder(event) {
         total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
         timestamp: new Date()
     };
+    
+    // Save customer info for next time
+    saveCustomerInfo(orderData.customer);
     
     // Store order data temporarily
     window.currentOrder = orderData;
@@ -461,4 +467,122 @@ function finishOrder() {
     updateCartUI();
     closeOrderSummary();
     showNotification('ขอบคุณที่ใช้บริการ ครัวคุณหญิง! คำสั่งซื้อถูกส่งไปยังร้านแล้ว');
+}
+
+// Address Management Functions
+function checkSavedAddress() {
+    const savedInfo = localStorage.getItem('customerInfo');
+    
+    if (savedInfo) {
+        const customer = JSON.parse(savedInfo);
+        const savedAddressBtn = document.querySelector('.address-option:first-child');
+        const savedAddressInfo = document.getElementById('savedAddressInfo');
+        
+        // Show saved address info
+        savedAddressInfo.innerHTML = `
+            <h5>ที่อยู่เดิม</h5>
+            <p><i class="fas fa-user"></i> ${customer.name}</p>
+            <p><i class="fas fa-phone"></i> ${customer.phone}</p>
+            <p><i class="fas fa-home"></i> ${getDormName(customer.dorm)} ห้อง ${customer.room}</p>
+            <button type="button" class="edit-btn" onclick="useNewAddress()">
+                <i class="fas fa-edit"></i> แก้ไขที่อยู่
+            </button>
+        `;
+        
+        // Disable and show saved address by default
+        savedAddressBtn.disabled = false;
+        useSavedAddress();
+    } else {
+        // No saved address, disable the button
+        const savedAddressBtn = document.querySelector('.address-option:first-child');
+        savedAddressBtn.disabled = true;
+        savedAddressBtn.style.opacity = '0.5';
+        savedAddressBtn.style.cursor = 'not-allowed';
+        
+        // Auto select new address
+        useNewAddress();
+    }
+}
+
+function getDormName(dormValue) {
+    const dormMap = {
+        'dorm-a': 'หอ A',
+        'dorm-b': 'หอ B', 
+        'dorm-c': 'หอ C'
+    };
+    return dormMap[dormValue] || dormValue;
+}
+
+function useSavedAddress() {
+    const savedInfo = localStorage.getItem('customerInfo');
+    
+    if (!savedInfo) {
+        showNotification('ไม่พบที่อยู่เดิม');
+        useNewAddress();
+        return;
+    }
+    
+    const customer = JSON.parse(savedInfo);
+    const form = document.getElementById('orderForm');
+    
+    // Fill form with saved data
+    form.name.value = customer.name;
+    form.phone.value = customer.phone;
+    form.dorm.value = customer.dorm;
+    form.room.value = customer.room;
+    
+    // Update UI
+    document.querySelectorAll('.address-option').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('.address-option:first-child').classList.add('active');
+    
+    // Show saved address info, hide form fields
+    document.getElementById('savedAddressInfo').style.display = 'block';
+    form.style.display = 'none';
+    
+    // Create a visible summary with submit button
+    const formContainer = form.parentElement;
+    if (!document.getElementById('savedAddressSummary')) {
+        const summary = document.createElement('div');
+        summary.id = 'savedAddressSummary';
+        summary.innerHTML = `
+            <button type="button" class="submit-order-btn" onclick="submitOrderWithSavedAddress()">
+                ยืนยันคำสั่งซื้อ
+            </button>
+        `;
+        formContainer.appendChild(summary);
+    }
+}
+
+function useNewAddress() {
+    // Update UI
+    document.querySelectorAll('.address-option').forEach(btn => btn.classList.remove('active'));
+    document.querySelector('.address-option:last-child').classList.add('active');
+    
+    // Hide saved address info, show form
+    document.getElementById('savedAddressInfo').style.display = 'none';
+    document.getElementById('orderForm').style.display = 'block';
+    
+    // Remove saved address summary if exists
+    const summary = document.getElementById('savedAddressSummary');
+    if (summary) {
+        summary.remove();
+    }
+    
+    // Clear form for new input
+    const form = document.getElementById('orderForm');
+    form.reset();
+}
+
+function submitOrderWithSavedAddress() {
+    const form = document.getElementById('orderForm');
+    form.dispatchEvent(new Event('submit', { cancelable: true }));
+}
+
+function saveCustomerInfo(customer) {
+    localStorage.setItem('customerInfo', JSON.stringify({
+        name: customer.name,
+        phone: customer.phone,
+        dorm: customer.dorm,
+        room: customer.room
+    }));
 }

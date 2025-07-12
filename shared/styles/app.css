@@ -458,8 +458,12 @@ body {
 }
 
 /* Order Form */
-#orderForm {
+.modal-body {
     padding: 2.5rem;
+}
+
+#orderForm {
+    padding: 0;
 }
 
 .form-group {
@@ -773,6 +777,80 @@ body {
     color: var(--dark-color);
     margin-bottom: 1rem;
     font-size: 1.2rem;
+}
+
+/* Address Selection */
+.address-selection {
+    margin-bottom: 2rem;
+}
+
+.address-selection h4 {
+    color: var(--dark-color);
+    margin-bottom: 1rem;
+}
+
+.address-options {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.address-option {
+    background: white;
+    border: 2px solid var(--light-color);
+    padding: 1.5rem;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 600;
+}
+
+.address-option:hover {
+    border-color: var(--primary-color);
+    background: var(--light-color);
+}
+
+.address-option.active {
+    border-color: var(--primary-color);
+    background: var(--light-color);
+    color: var(--primary-color);
+}
+
+.address-option i {
+    font-size: 2rem;
+    color: var(--primary-color);
+}
+
+.saved-address-info {
+    background: var(--light-color);
+    padding: 1.5rem;
+    border-radius: 10px;
+    margin-bottom: 1rem;
+}
+
+.saved-address-info h5 {
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+}
+
+.saved-address-info p {
+    margin: 0.25rem 0;
+    color: #666;
+}
+
+.saved-address-info .edit-btn {
+    background: none;
+    border: none;
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 0.5rem;
+    text-decoration: underline;
 }
 
 .qr-code {
