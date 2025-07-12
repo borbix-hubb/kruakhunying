@@ -20,6 +20,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Try to load from Supabase, but continue even if it fails
         try {
             await loadOrdersFromSupabase();
+            // Update dashboard statistics
+            await updateDashboardStats();
             // Make sure to display orders if we're on orders page
             const activeSection = document.querySelector('.content-section:not([style*="none"])');
             if (!activeSection || activeSection.id === 'orders') {
@@ -1047,32 +1049,6 @@ function updateReportsDateRange() {
     loadReports(startDate, endDate);
 }
 
-function setQuickRange(range) {
-    const today = new Date();
-    let startDate, endDate = new Date();
-    
-    switch (range) {
-        case 'today':
-            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-            endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
-            break;
-        case 'week':
-            startDate = new Date(today);
-            startDate.setDate(today.getDate() - 7);
-            break;
-        case 'month':
-            startDate = new Date(today);
-            startDate.setDate(today.getDate() - 30);
-            break;
-    }
-    
-    // Update date inputs
-    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
-    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
-    
-    // Load reports with new range
-    loadReports(startDate, endDate);
-}
 
 // Filter orders
 document.querySelectorAll('.filter-btn').forEach(btn => {
