@@ -180,30 +180,33 @@
                         <input type="date" id="startDate">
                         <span>ถึง</span>
                         <input type="date" id="endDate">
-                        <button class="btn-primary">ดูรายงาน</button>
+                        <button class="btn-primary" onclick="updateReportsDateRange()">ดูรายงาน</button>
+                        <button class="btn-secondary" onclick="setQuickRange('today')">วันนี้</button>
+                        <button class="btn-secondary" onclick="setQuickRange('week')">7 วัน</button>
+                        <button class="btn-secondary" onclick="setQuickRange('month')">30 วัน</button>
                     </div>
                 </div>
 
                 <div class="report-summary">
                     <div class="summary-card">
                         <h3>ยอดขายวันนี้</h3>
-                        <p class="summary-value">฿2,450</p>
-                        <p class="summary-change positive">+15% จากเมื่อวาน</p>
+                        <p class="summary-value" id="todaySales">฿0</p>
+                        <p class="summary-orders" id="todayOrders">0 ออเดอร์</p>
                     </div>
                     <div class="summary-card">
                         <h3>ยอดขายสัปดาห์นี้</h3>
-                        <p class="summary-value">฿15,890</p>
-                        <p class="summary-change positive">+8% จากสัปดาห์ที่แล้ว</p>
+                        <p class="summary-value" id="weekSales">฿0</p>
+                        <p class="summary-orders" id="weekOrders">0 ออเดอร์</p>
                     </div>
                     <div class="summary-card">
                         <h3>ยอดขายเดือนนี้</h3>
-                        <p class="summary-value">฿68,320</p>
-                        <p class="summary-change positive">+12% จากเดือนที่แล้ว</p>
+                        <p class="summary-value" id="monthSales">฿0</p>
+                        <p class="summary-orders" id="monthOrders">0 ออเดอร์</p>
                     </div>
                     <div class="summary-card">
                         <h3>ค่าเฉลี่ยต่อคำสั่งซื้อ</h3>
-                        <p class="summary-value">฿52.26</p>
-                        <p class="summary-change">เดือนนี้</p>
+                        <p class="summary-value" id="avgOrderValue">฿0</p>
+                        <p class="summary-orders" id="totalOrders">ทั้งหมด 0 ออเดอร์</p>
                     </div>
                 </div>
 

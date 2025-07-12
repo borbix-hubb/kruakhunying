@@ -526,19 +526,26 @@ async function addMenuItem(event) {
 // Reports
 let salesChart = null;
 
-async function loadReports() {
+async function loadReports(startDate = null, endDate = null) {
     try {
         let ordersData = [];
         
+        // Set default date range if not provided
+        if (!startDate) {
+            startDate = new Date();
+            startDate.setDate(startDate.getDate() - 7);
+        }
+        if (!endDate) {
+            endDate = new Date();
+        }
+        
         // Try to get data from Supabase
         if (window.supabaseClient) {
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            
             const { data, error } = await window.supabaseClient
                 .from('orders')
                 .select('created_at, total_amount, status')
-                .gte('created_at', sevenDaysAgo.toISOString())
+                .gte('created_at', startDate.toISOString())
+                .lte('created_at', endDate.toISOString())
                 .order('created_at');
             
             if (!error && data) {
@@ -546,7 +553,10 @@ async function loadReports() {
             }
         }
         
-        // Group by date
+        // Update summary cards with real data
+        await updateReportSummary();
+        
+        // Group by date for chart
         const dailyData = {};
         const labels = [];
         const salesData = [];
@@ -958,6 +968,110 @@ function showNotification(message) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// Update report summary with real data
+async function updateReportSummary() {
+    if (!window.supabaseClient) return;
+    
+    try {
+        const today = new Date();
+        const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+        const startOfWeek = new Date(today);
+        startOfWeek.setDate(today.getDate() - 7);
+        const startOfMonth = new Date(today);
+        startOfMonth.setDate(today.getDate() - 30);
+        
+        // Get today's data
+        const { data: todayData } = await window.supabaseClient
+            .from('orders')
+            .select('total_amount')
+            .gte('created_at', startOfToday.toISOString());
+        
+        // Get week's data
+        const { data: weekData } = await window.supabaseClient
+            .from('orders')
+            .select('total_amount')
+            .gte('created_at', startOfWeek.toISOString());
+        
+        // Get month's data
+        const { data: monthData } = await window.supabaseClient
+            .from('orders')
+            .select('total_amount')
+            .gte('created_at', startOfMonth.toISOString());
+        
+        // Calculate totals
+        const todaySales = todayData?.reduce((sum, order) => sum + parseFloat(order.total_amount), 0) || 0;
+        const weekSales = weekData?.reduce((sum, order) => sum + parseFloat(order.total_amount), 0) || 0;
+        const monthSales = monthData?.reduce((sum, order) => sum + parseFloat(order.total_amount), 0) || 0;
+        
+        const todayOrders = todayData?.length || 0;
+        const weekOrders = weekData?.length || 0;
+        const monthOrders = monthData?.length || 0;
+        
+        const avgOrderValue = monthOrders > 0 ? monthSales / monthOrders : 0;
+        
+        // Update UI
+        document.getElementById('todaySales').textContent = `฿${todaySales.toLocaleString()}`;
+        document.getElementById('todayOrders').textContent = `${todayOrders} ออเดอร์`;
+        
+        document.getElementById('weekSales').textContent = `฿${weekSales.toLocaleString()}`;
+        document.getElementById('weekOrders').textContent = `${weekOrders} ออเดอร์`;
+        
+        document.getElementById('monthSales').textContent = `฿${monthSales.toLocaleString()}`;
+        document.getElementById('monthOrders').textContent = `${monthOrders} ออเดอร์`;
+        
+        document.getElementById('avgOrderValue').textContent = `฿${avgOrderValue.toFixed(2)}`;
+        document.getElementById('totalOrders').textContent = `ทั้งหมด ${monthOrders} ออเดอร์`;
+        
+    } catch (error) {
+        console.error('Error updating report summary:', error);
+    }
+}
+
+// Date range functions for reports
+function updateReportsDateRange() {
+    const startDate = new Date(document.getElementById('startDate').value);
+    const endDate = new Date(document.getElementById('endDate').value);
+    
+    if (isNaN(startDate) || isNaN(endDate)) {
+        showNotification('กรุณาเลือกวันที่ให้ถูกต้อง');
+        return;
+    }
+    
+    if (startDate > endDate) {
+        showNotification('วันที่เริ่มต้นต้องไม่เกินวันที่สิ้นสุด');
+        return;
+    }
+    
+    loadReports(startDate, endDate);
+}
+
+function setQuickRange(range) {
+    const today = new Date();
+    let startDate, endDate = new Date();
+    
+    switch (range) {
+        case 'today':
+            startDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59);
+            break;
+        case 'week':
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 7);
+            break;
+        case 'month':
+            startDate = new Date(today);
+            startDate.setDate(today.getDate() - 30);
+            break;
+    }
+    
+    // Update date inputs
+    document.getElementById('startDate').value = startDate.toISOString().split('T')[0];
+    document.getElementById('endDate').value = endDate.toISOString().split('T')[0];
+    
+    // Load reports with new range
+    loadReports(startDate, endDate);
 }
 
 // Filter orders
