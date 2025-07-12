@@ -227,7 +227,6 @@ function loadMenuItems() {
     menuList.innerHTML = menuItems.map(item => `
         <div class="menu-item-card">
             <div class="menu-item-info">
-                <span class="menu-item-emoji">${item.emoji}</span>
                 <div>
                     <h4>${item.name}</h4>
                     <p>฿${item.price} - ${getCategoryText(item.category)}</p>

@@ -75,10 +75,7 @@ function createMenuItemElement(item) {
     if (item.hot) badges.push('<span class="badge badge-hot">🌶️ เผ็ด</span>');
     
     div.innerHTML = `
-        <div class="menu-item-image">
-            ${item.emoji}
-            ${badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : ''}
-        </div>
+        ${badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : ''}
         <div class="menu-item-info">
             <h3 class="menu-item-name">${item.name}</h3>
             <p class="menu-item-description">${item.description}</p>
@@ -152,7 +149,6 @@ function updateCartUI() {
     
     cartItems.innerHTML = cart.map(item => `
         <div class="cart-item">
-            <div class="cart-item-image">${item.emoji}</div>
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
                 <div class="cart-item-price">฿${item.price}</div>
@@ -194,7 +190,6 @@ function showItemDetail(item) {
     const itemDetail = document.getElementById('itemDetail');
     
     itemDetail.innerHTML = `
-        <div class="item-detail-image">${item.emoji}</div>
         <div class="item-detail-info">
             <h2>${item.name}</h2>
             <p class="item-detail-description">${item.description}</p>
