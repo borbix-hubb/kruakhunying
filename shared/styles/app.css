@@ -979,3 +979,65 @@ body {
         flex-direction: column;
     }
 }
+
+/* Item Options Modal */
+.item-options-modal {
+    max-width: 500px;
+}
+
+.options-title {
+    color: var(--dark-color);
+    font-weight: 500;
+    margin-bottom: 1rem;
+}
+
+.options-grid {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.option-btn {
+    background: white;
+    border: 2px solid var(--light-color);
+    padding: 1rem 1.5rem;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: all 0.3s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
+}
+
+.option-btn:hover {
+    border-color: var(--primary-color);
+    background: var(--light-color);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 107, 53, 0.2);
+}
+
+.option-name {
+    color: var(--dark-color);
+    font-size: 1rem;
+}
+
+.option-price {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Menu Item Emoji */
+.menu-item-emoji {
+    font-size: 2.5rem;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+/* Cart Item Option Display */
+.cart-item-option {
+    margin-top: 0.25rem;
+    margin-bottom: 0.25rem;
+}

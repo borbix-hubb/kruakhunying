@@ -17,34 +17,60 @@ function checkOtherBuilding(select) {
     }
 }
 
-// Load menu from Supabase on page load
+// Load menu with options from Supabase
 async function loadMenuFromSupabase() {
     try {
+        // Load menu items with their options
         const { data, error } = await window.supabaseClient
-            .from('menu_items')
-            .select(`
-                *,
-                menu_categories (
-                    name,
-                    slug
-                )
-            `)
-            .eq('is_available', true)
-            .order('category_id');
+            .from('menu_with_options')
+            .select('*')
+            .order('category_id, id, option_name');
         
         if (error) throw error;
         
-        // Transform data to match our format
-        menuData = data.map(item => ({
-            id: item.id,
-            name: item.name,
-            category: item.menu_categories?.slug || 'rice',
-            price: item.price,
-            emoji: getMenuEmoji(item.category_id, item.name),
-            description: item.description || '',
-            popular: item.is_popular || false,
-            recommended: item.is_recommended || false
-        }));
+        console.log('Loaded menu data:', data);
+        
+        // Group menu items by id and collect their options
+        const menuMap = new Map();
+        
+        data.forEach(row => {
+            if (!menuMap.has(row.id)) {
+                menuMap.set(row.id, {
+                    id: row.id,
+                    name: row.name,
+                    category: getCategorySlug(row.category_name),
+                    basePrice: row.base_price,
+                    description: row.description || '',
+                    emoji: getMenuEmoji(row.category_id, row.name),
+                    popular: row.is_popular || false,
+                    recommended: row.is_recommended || false,
+                    options: []
+                });
+            }
+            
+            // Add option if it exists
+            if (row.option_name) {
+                menuMap.get(row.id).options.push({
+                    name: row.option_name,
+                    price: row.final_price
+                });
+            }
+        });
+        
+        // Convert map to array
+        menuData = Array.from(menuMap.values());
+        
+        // For items without options, set single price option
+        menuData.forEach(item => {
+            if (item.options.length === 0) {
+                item.options.push({
+                    name: 'ปกติ',
+                    price: item.basePrice
+                });
+            }
+        });
+        
+        console.log('Processed menu data:', menuData);
         
         // Display menu after loading
         displayMenu();
@@ -85,14 +111,35 @@ async function loadMenuFromSupabase() {
     }
 }
 
+// Helper function to convert category name to slug
+function getCategorySlug(categoryName) {
+    const categoryMap = {
+        'อาหารจานเดียวแนะนำ': 'rice',
+        'อาหารจานเดียว': 'rice',
+        'อาหารประเภทเส้น': 'noodle',
+        'ประเภทกับข้าว': 'sidedish',
+        'ประเภทยำ': 'sidedish',
+        'ประเภทน้ำตก': 'sidedish',
+        'ประเภทตำ': 'sidedish',
+        'เมนูทานเล่น': 'sidedish',
+        'เมนูเพิ่มเติม': 'sidedish'
+    };
+    return categoryMap[categoryName] || 'rice';
+}
+
 // Helper function to get emoji for menu item
 function getMenuEmoji(categoryId, name) {
     // Map emojis based on category or specific items
     const categoryEmojiMap = {
-        1: '🍚', // rice
-        2: '🍜', // noodle
-        3: '🥘', // sidedish
-        4: '🥤'  // drink
+        1: '🍛', // recommended dishes
+        2: '🍚', // rice dishes
+        3: '🍜', // noodles
+        4: '🍲', // side dishes
+        5: '🥗', // salads
+        6: '🍖', // namtok
+        7: '🥒', // somtam
+        8: '🍟', // snacks
+        9: '➕'  // extras
     };
     
     // Special emojis for specific items
@@ -159,14 +206,26 @@ function createMenuItemElement(item) {
     if (item.recommended) badges.push('<span class="badge badge-recommended">แนะนำ</span>');
     if (item.hot) badges.push('<span class="badge badge-hot">🌶️ เผ็ด</span>');
     
+    // Show price range if multiple options
+    let priceDisplay;
+    if (item.options && item.options.length > 1) {
+        const prices = item.options.map(opt => opt.price);
+        const minPrice = Math.min(...prices);
+        const maxPrice = Math.max(...prices);
+        priceDisplay = minPrice === maxPrice ? `฿${minPrice}` : `฿${minPrice}-${maxPrice}`;
+    } else {
+        priceDisplay = `฿${item.options?.[0]?.price || item.basePrice}`;
+    }
+    
     div.innerHTML = `
         ${badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : ''}
+        <div class="menu-item-emoji">${item.emoji}</div>
         <div class="menu-item-info">
             <h3 class="menu-item-name">${item.name}</h3>
             <p class="menu-item-description">${item.description}</p>
             <div class="menu-item-footer">
-                <span class="menu-item-price">฿${item.price}</span>
-                <button class="add-to-cart-btn" onclick="event.stopPropagation(); addToCart(${item.id})">
+                <span class="menu-item-price">${priceDisplay}</span>
+                <button class="add-to-cart-btn" onclick="event.stopPropagation(); showItemOptions(${item.id})">
                     <i class="fas fa-plus"></i> เพิ่ม
                 </button>
             </div>
@@ -202,15 +261,83 @@ function searchMenu(query) {
     });
 }
 
-// Add to cart
-function addToCart(itemId, note = '') {
+// Show item options modal
+function showItemOptions(itemId) {
     const item = menuData.find(i => i.id === itemId);
-    const existingItem = cart.find(i => i.id === itemId && i.note === note);
+    if (!item) return;
+    
+    // If only one option, add directly to cart
+    if (item.options.length === 1) {
+        addToCart(itemId, item.options[0].name, item.options[0].price);
+        return;
+    }
+    
+    // Create modal for multiple options
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'itemOptionsModal';
+    
+    const optionsHTML = item.options.map(option => `
+        <button class="option-btn" onclick="selectOption(${itemId}, '${option.name}', ${option.price})">
+            <span class="option-name">${option.name}</span>
+            <span class="option-price">฿${option.price}</span>
+        </button>
+    `).join('');
+    
+    modal.innerHTML = `
+        <div class="modal-content item-options-modal">
+            <div class="modal-header">
+                <h3>${item.name}</h3>
+                <button class="close-modal" onclick="closeItemOptionsModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="options-title">เลือกประเภทเนื้อสัตว์:</p>
+                <div class="options-grid">
+                    ${optionsHTML}
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+}
+
+// Select option and add to cart
+function selectOption(itemId, optionName, price) {
+    addToCart(itemId, optionName, price);
+    closeItemOptionsModal();
+}
+
+// Close item options modal
+function closeItemOptionsModal() {
+    const modal = document.getElementById('itemOptionsModal');
+    if (modal) {
+        modal.remove();
+    }
+}
+
+// Add to cart with option
+function addToCart(itemId, optionName = '', price = 0, note = '') {
+    const item = menuData.find(i => i.id === itemId);
+    if (!item) return;
+    
+    // Create unique key for cart item (same item with different options = different cart items)
+    const cartKey = `${itemId}_${optionName}`;
+    const existingItem = cart.find(i => i.cartKey === cartKey && i.note === note);
     
     if (existingItem) {
         existingItem.quantity++;
     } else {
-        cart.push({ ...item, quantity: 1, note: note });
+        cart.push({ 
+            ...item, 
+            cartKey: cartKey,
+            selectedOption: optionName,
+            price: price || item.basePrice,
+            quantity: 1, 
+            note: note 
+        });
     }
     
     updateCartUI();
@@ -236,6 +363,7 @@ function updateCartUI() {
         <div class="cart-item">
             <div class="cart-item-info">
                 <div class="cart-item-name">${item.name}</div>
+                ${item.selectedOption ? `<div class="cart-item-option" style="font-size: 12px; color: #FF6B35; font-weight: 500;">🍽️ ${item.selectedOption}</div>` : ''}
                 ${item.note ? `<div class="cart-item-note" style="font-size: 12px; color: #666;">📝 ${item.note}</div>` : ''}
                 <div class="cart-item-price">฿${item.price}</div>
             </div>
