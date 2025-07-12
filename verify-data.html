@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตรวจสอบข้อมูลในระบบ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e91e63;
+            text-align: center;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+        }
+        .success { color: #4caf50; }
+        .error { color: #f44336; }
+        .info { color: #2196f3; }
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #d81b60;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ตรวจสอบข้อมูลในระบบ</h1>
+        
+        <div class="section">
+            <h2>1. ข้อมูลคำสั่งซื้อทั้งหมด</h2>
+            <button onclick="loadAllOrders()">ดูคำสั่งซื้อทั้งหมด</button>
+            <div id="ordersResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. สร้างคำสั่งซื้อใหม่</h2>
+            <button onclick="quickCreateOrder()">สร้างคำสั่งซื้อด่วน</button>
+            <div id="createResult" class="result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. ลบข้อมูลทดสอบ</h2>
+            <button onclick="deleteTestOrders()">ลบคำสั่งซื้อทดสอบ (TEST*)</button>
+            <div id="deleteResult" class="result"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+    <script>
+        // Use the global supabase client
+        const supabase = window.supabaseClient;
+        
+        async function loadAllOrders() {
+            const result = document.getElementById('ordersResult');
+            result.innerHTML = '<p>กำลังโหลด...</p>';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (!data || data.length === 0) {
+                    result.innerHTML = '<p class="info">ไม่พบคำสั่งซื้อในระบบ</p>';
+                } else {
+                    let html = `<p class="success">พบ ${data.length} คำสั่งซื้อ</p>`;
+                    html += '<table><tr><th>Order #</th><th>ลูกค้า</th><th>รายการ</th><th>ราคา</th><th>สถานะ</th><th>วันที่</th></tr>';
+                    
+                    data.forEach(order => {
+                        const items = order.order_items?.map(item => 
+                            `${item.menu_items?.name || 'Unknown'} x${item.quantity}`
+                        ).join(', ') || 'ไม่มีรายการ';
+                        
+                        const date = new Date(order.created_at).toLocaleString('th-TH');
+                        
+                        html += `<tr>
+                            <td>${order.order_number || order.id}</td>
+                            <td>${order.customers?.name || 'ไม่ระบุ'}<br>${order.customers?.phone || '-'}</td>
+                            <td>${items}</td>
+                            <td>฿${order.total_amount}</td>
+                            <td>${order.status}</td>
+                            <td>${date}</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</table>';
+                    result.innerHTML = html;
+                }
+                
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function quickCreateOrder() {
+            const result = document.getElementById('createResult');
+            result.innerHTML = '<p>กำลังสร้าง...</p>';
+            
+            try {
+                // Get first menu item
+                const { data: menuItems, error: menuError } = await supabase
+                    .from('menu_items')
+                    .select('id, name, price')
+                    .eq('is_available', true)
+                    .limit(1);
+                
+                if (menuError || !menuItems || menuItems.length === 0) {
+                    throw new Error('ไม่พบเมนูในระบบ');
+                }
+                
+                const menuItem = menuItems[0];
+                
+                // Create customer
+                const timestamp = Date.now();
+                const { data: customer, error: custError } = await supabase
+                    .from('customers')
+                    .insert([{
+                        name: 'ลูกค้าทดสอบ ' + timestamp,
+                        phone: '09' + Math.floor(Math.random() * 100000000),
+                        dorm: 'หอ A',
+                        room: '101'
+                    }])
+                    .select()
+                    .single();
+                
+                if (custError) throw custError;
+                
+                // Create order
+                const orderNumber = 'ORD' + timestamp.toString().slice(-6);
+                const { data: order, error: orderError } = await supabase
+                    .from('orders')
+                    .insert([{
+                        order_number: orderNumber,
+                        customer_id: customer.id,
+                        total_amount: menuItem.price,
+                        status: 'pending',
+                        payment_method: 'pending',
+                        delivery_dorm: 'หอ A',
+                        delivery_room: '101'
+                    }])
+                    .select()
+                    .single();
+                
+                if (orderError) throw orderError;
+                
+                // Create order item
+                const { error: itemError } = await supabase
+                    .from('order_items')
+                    .insert([{
+                        order_id: order.id,
+                        menu_item_id: menuItem.id,
+                        quantity: 1,
+                        price: menuItem.price,
+                        subtotal: menuItem.price
+                    }]);
+                
+                if (itemError) throw itemError;
+                
+                result.innerHTML = `
+                    <p class="success">✅ สร้างคำสั่งซื้อสำเร็จ!</p>
+                    <p>หมายเลขคำสั่งซื้อ: <strong>${orderNumber}</strong></p>
+                    <p>ลูกค้า: ${customer.name}</p>
+                    <p>เมนู: ${menuItem.name} - ฿${menuItem.price}</p>
+                    <p><strong>🔄 Refresh หน้า Admin Dashboard เพื่อดูคำสั่งซื้อใหม่</strong></p>
+                `;
+                
+                // Reload orders
+                loadAllOrders();
+                
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function deleteTestOrders() {
+            const result = document.getElementById('deleteResult');
+            result.innerHTML = '<p>กำลังลบ...</p>';
+            
+            try {
+                // Find test orders
+                const { data: testOrders, error: findError } = await supabase
+                    .from('orders')
+                    .select('id')
+                    .like('order_number', 'TEST%');
+                
+                if (findError) throw findError;
+                
+                if (!testOrders || testOrders.length === 0) {
+                    result.innerHTML = '<p class="info">ไม่พบคำสั่งซื้อทดสอบ</p>';
+                    return;
+                }
+                
+                // Delete orders (cascade will delete order_items)
+                const { error: deleteError } = await supabase
+                    .from('orders')
+                    .delete()
+                    .like('order_number', 'TEST%');
+                
+                if (deleteError) throw deleteError;
+                
+                result.innerHTML = `<p class="success">✅ ลบคำสั่งซื้อทดสอบ ${testOrders.length} รายการ</p>`;
+                
+                // Reload orders
+                loadAllOrders();
+                
+            } catch (error) {
+                result.innerHTML = `<p class="error">Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Load on start
+        window.addEventListener('load', () => {
+            loadAllOrders();
+        });
+    </script>
+</body>
+</html>
