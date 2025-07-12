@@ -3,7 +3,7 @@
 // Admin login
 async function adminLogin(email, password) {
     try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
+        const { data, error } = await window.window.supabaseClient.auth.signInWithPassword({
             email,
             password
         });
@@ -11,7 +11,7 @@ async function adminLogin(email, password) {
         if (error) throw error;
         
         // Check if user is admin
-        const { data: adminUser, error: adminError } = await supabaseClient
+        const { data: adminUser, error: adminError } = await window.supabaseClient
             .from('admin_users')
             .select('*')
             .eq('email', email)
@@ -19,12 +19,12 @@ async function adminLogin(email, password) {
             .single();
         
         if (adminError || !adminUser) {
-            await supabaseClient.auth.signOut();
+            await window.supabaseClient.auth.signOut();
             throw new Error('Unauthorized access');
         }
         
         // Update last login
-        await supabaseClient
+        await window.supabaseClient
             .from('admin_users')
             .update({ last_login: new Date().toISOString() })
             .eq('id', adminUser.id);
@@ -39,7 +39,7 @@ async function adminLogin(email, password) {
 // Admin logout
 async function adminLogout() {
     try {
-        const { error } = await supabaseClient.auth.signOut();
+        const { error } = await window.supabaseClient.auth.signOut();
         if (error) throw error;
         
         return { success: true };
@@ -52,14 +52,14 @@ async function adminLogout() {
 // Get current session
 async function getCurrentSession() {
     try {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        const { data: { session }, error } = await window.supabaseClient.auth.getSession();
         
         if (error) throw error;
         
         if (!session) return null;
         
         // Verify admin user
-        const { data: adminUser, error: adminError } = await supabaseClient
+        const { data: adminUser, error: adminError } = await window.supabaseClient
             .from('admin_users')
             .select('*')
             .eq('email', session.user.email)
@@ -77,7 +77,7 @@ async function getCurrentSession() {
 
 // Subscribe to auth changes
 function onAuthStateChange(callback) {
-    return supabaseClient.auth.onAuthStateChange(async (event, session) => {
+    return window.supabaseClient.auth.onAuthStateChange(async (event, session) => {
         if (event === 'SIGNED_IN' && session) {
             const adminUser = await getCurrentSession();
             callback(adminUser);
@@ -91,7 +91,7 @@ function onAuthStateChange(callback) {
 async function createFirstAdmin(email, password, name) {
     try {
         // First create auth user
-        const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+        const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
             email,
             password
         });
@@ -99,7 +99,7 @@ async function createFirstAdmin(email, password, name) {
         if (authError) throw authError;
         
         // Then create admin user record
-        const { data, error } = await supabaseClient
+        const { data, error } = await window.supabaseClient
             .from('admin_users')
             .insert([{
                 email,
