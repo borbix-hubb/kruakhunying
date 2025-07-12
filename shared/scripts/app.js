@@ -289,9 +289,14 @@ function showItemDetail(item) {
                 <label>หมายเหตุ (ถ้ามี)</label>
                 <input type="text" id="itemNote" placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 5px;">
             </div>
-            <button class="checkout-btn" onclick="addDetailToCart(${item.id})">
-                <i class="fas fa-cart-plus"></i> เพิ่มในตะกร้า
-            </button>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="back-btn" onclick="closeItemModal()" style="flex: 1; padding: 12px; background: #f0f0f0; color: #333; border: none; border-radius: 8px; font-size: 16px; cursor: pointer;">
+                    <i class="fas fa-arrow-left"></i> กลับ
+                </button>
+                <button class="checkout-btn" onclick="addDetailToCart(${item.id})" style="flex: 2;">
+                    <i class="fas fa-cart-plus"></i> เพิ่มในตะกร้า
+                </button>
+            </div>
         </div>
     `;
     

@@ -417,6 +417,25 @@ body {
     transform: translateY(-2px);
 }
 
+/* Back Button */
+.back-btn {
+    background: #f0f0f0;
+    color: #333;
+    border: none;
+    padding: 1rem;
+    border-radius: 25px;
+    font-size: 1rem;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.back-btn:hover {
+    background: #e0e0e0;
+    transform: translateY(-2px);
+}
+
 /* Modals */
 .modal {
     display: none;
