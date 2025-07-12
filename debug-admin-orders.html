@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Admin Orders</title>
+    <style>
+        body { font-family: 'Prompt', sans-serif; padding: 20px; }
+        .debug-box { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; color: #c62828; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .info { background: #e3f2fd; color: #1565c0; }
+    </style>
+</head>
+<body>
+    <h1>Debug Admin Orders Connection</h1>
+    
+    <div id="debugOutput"></div>
+    
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="./shared/config/supabase.js"></script>
+    
+    <script>
+        const debugOutput = document.getElementById('debugOutput');
+        
+        function addDebugMessage(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `debug-box ${type}`;
+            div.textContent = message;
+            debugOutput.appendChild(div);
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        async function debugOrders() {
+            addDebugMessage('Starting debug...', 'info');
+            
+            // Check Supabase client
+            if (!window.supabaseClient) {
+                addDebugMessage('ERROR: Supabase client not initialized', 'error');
+                return;
+            }
+            addDebugMessage('✓ Supabase client found', 'success');
+            
+            try {
+                // Test basic connection
+                addDebugMessage('Testing basic connection...', 'info');
+                const { data: testData, error: testError } = await window.supabaseClient
+                    .from('orders')
+                    .select('count')
+                    .limit(1);
+                
+                if (testError) {
+                    addDebugMessage(`Connection test failed: ${testError.message}`, 'error');
+                    return;
+                }
+                addDebugMessage('✓ Basic connection successful', 'success');
+                
+                // Check orders table
+                addDebugMessage('Checking orders table...', 'info');
+                const { data: orders, error: ordersError } = await window.supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .limit(5);
+                
+                if (ordersError) {
+                    addDebugMessage(`Orders query failed: ${ordersError.message}`, 'error');
+                    return;
+                }
+                addDebugMessage(`✓ Found ${orders?.length || 0} orders`, 'success');
+                
+                if (orders && orders.length > 0) {
+                    addDebugMessage(`Sample order: ${JSON.stringify(orders[0], null, 2)}`, 'info');
+                }
+                
+                // Check order_items table
+                addDebugMessage('Checking order_items table...', 'info');
+                const { data: orderItems, error: itemsError } = await window.supabaseClient
+                    .from('order_items')
+                    .select('*')
+                    .limit(5);
+                
+                if (itemsError) {
+                    addDebugMessage(`Order items query failed: ${itemsError.message}`, 'error');
+                    return;
+                }
+                addDebugMessage(`✓ Found ${orderItems?.length || 0} order items`, 'success');
+                
+                if (orderItems && orderItems.length > 0) {
+                    addDebugMessage(`Sample order item: ${JSON.stringify(orderItems[0], null, 2)}`, 'info');
+                }
+                
+                // Check customers table
+                addDebugMessage('Checking customers table...', 'info');
+                const { data: customers, error: customersError } = await window.supabaseClient
+                    .from('customers')
+                    .select('*')
+                    .limit(5);
+                
+                if (customersError) {
+                    addDebugMessage(`Customers query failed: ${customersError.message}`, 'error');
+                    return;
+                }
+                addDebugMessage(`✓ Found ${customers?.length || 0} customers`, 'success');
+                
+                // Try the full query from admin.js
+                addDebugMessage('Testing full admin query...', 'info');
+                const { data: fullData, error: fullError } = await window.supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            subtotal,
+                            note,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (fullError) {
+                    addDebugMessage(`Full query failed: ${fullError.message}`, 'error');
+                    addDebugMessage(`Error details: ${JSON.stringify(fullError, null, 2)}`, 'error');
+                    return;
+                }
+                
+                addDebugMessage(`✓ Full query successful! Found ${fullData?.length || 0} orders with relationships`, 'success');
+                
+                if (fullData && fullData.length > 0) {
+                    addDebugMessage(`Sample full order: ${JSON.stringify(fullData[0], null, 2)}`, 'info');
+                }
+                
+            } catch (error) {
+                addDebugMessage(`Unexpected error: ${error.message}`, 'error');
+                console.error('Full error:', error);
+            }
+        }
+        
+        // Run debug when page loads
+        window.addEventListener('load', () => {
+            setTimeout(debugOrders, 1000);
+        });
+    </script>
+</body>
+</html>

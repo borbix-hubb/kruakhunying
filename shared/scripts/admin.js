@@ -112,7 +112,6 @@ async function loadOrdersFromSupabase() {
                     price,
                     subtotal,
                     note,
-                    selected_option,
                     menu_items (
                         name
                     )
@@ -122,7 +121,11 @@ async function loadOrdersFromSupabase() {
         
         if (error) {
             console.error('Supabase error:', error);
-            throw error;
+            console.error('Error details:', error.message, error.details, error.hint);
+            // Don't throw error, continue with empty data
+            orders = [];
+            loadOrders();
+            return;
         }
         
         console.log(`Found ${data?.length || 0} orders`);
@@ -154,7 +157,7 @@ async function loadOrdersFromSupabase() {
                 quantity: item.quantity,
                 price: item.price,
                 note: item.note || '',
-                option: item.selected_option || ''
+                option: ''
             })) || [],
             total: order.total_amount,
             status: order.status || 'pending',
