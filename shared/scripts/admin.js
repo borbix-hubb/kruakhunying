@@ -162,7 +162,7 @@ async function loadOrdersFromSupabase() {
             total: order.total_amount,
             status: order.status || 'pending',
             note: order.note || order.delivery_note,
-            paymentMethod: order.payment_method || 'เงินสด',
+            paymentMethod: order.payment_method || 'cash',
             timestamp: new Date(order.created_at)
         }));
         
@@ -277,10 +277,10 @@ function getStatusText(status) {
 function getPaymentMethodText(method) {
     const methodMap = {
         cash: 'เงินสด',
-        promptpay: 'PromptPay',
+        promptpay: 'สแกน',
         transfer: 'โอนเงิน'
     };
-    return methodMap[method] || method || 'เงินสด';
+    return methodMap[method] || 'เงินสด';
 }
 
 function getDormName(dorm) {
