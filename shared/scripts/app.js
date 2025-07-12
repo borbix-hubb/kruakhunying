@@ -292,6 +292,14 @@ function showItemOptions(itemId) {
                     ${optionsHTML}
                 </div>
                 <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>ตัวเลือกพิเศษ</label>
+                    <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem;">
+                        <button type="button" class="special-option-btn" onclick="toggleSpecialOption()" id="specialOptionBtn" style="flex: 1; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 10px; background: white; cursor: pointer; font-size: 1rem;">
+                            <i class="fas fa-plus-circle"></i> พิเศษ +10 บาท
+                        </button>
+                    </div>
+                </div>
+                <div class="form-group">
                     <label>หมายเหตุ</label>
                     <input type="text" id="itemNote" placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย, ไม่เผ็ด" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem;">
                 </div>
@@ -311,8 +319,29 @@ function selectOption(itemId, optionName, price) {
 // Select option with note and add to cart
 function selectOptionWithNote(itemId, optionName, price) {
     const note = document.getElementById('itemNote').value.trim();
-    addToCart(itemId, optionName, price, note);
+    const isSpecial = window.isSpecialOptionSelected || false;
+    const finalPrice = isSpecial ? price + 10 : price;
+    const finalNote = isSpecial ? (note ? `${note}, พิเศษ +10 บาท` : 'พิเศษ +10 บาท') : note;
+    addToCart(itemId, optionName, finalPrice, finalNote);
     closeItemOptionsModal();
+}
+
+// Toggle special option
+function toggleSpecialOption() {
+    const btn = document.getElementById('specialOptionBtn');
+    window.isSpecialOptionSelected = !window.isSpecialOptionSelected;
+    
+    if (window.isSpecialOptionSelected) {
+        btn.style.backgroundColor = '#FF6B35';
+        btn.style.color = 'white';
+        btn.style.borderColor = '#FF6B35';
+        btn.innerHTML = '<i class="fas fa-check-circle"></i> พิเศษ +10 บาท (เลือกแล้ว)';
+    } else {
+        btn.style.backgroundColor = 'white';
+        btn.style.color = '#333';
+        btn.style.borderColor = '#e0e0e0';
+        btn.innerHTML = '<i class="fas fa-plus-circle"></i> พิเศษ +10 บาท';
+    }
 }
 
 // Close item options modal
@@ -321,6 +350,8 @@ function closeItemOptionsModal() {
     if (modal) {
         modal.remove();
     }
+    // Reset special option
+    window.isSpecialOptionSelected = false;
 }
 
 // Add to cart with option

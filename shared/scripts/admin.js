@@ -232,7 +232,7 @@ function createOrderRow(order) {
         itemText += ` x${item.quantity}`;
         if (item.note) itemText += ` - ${item.note}`;
         return itemText;
-    }).join(', ');
+    }).join('<br>');
     const paymentMethod = getPaymentMethodText(order.paymentMethod);
     
     tr.innerHTML = `
@@ -547,6 +547,8 @@ async function addMenuItem(event) {
     const formData = new FormData(event.target);
     
     try {
+        console.log('Adding menu item with category:', formData.get('category'));
+        
         // Get category ID from slug
         const { data: category, error: catError } = await window.supabaseClient
             .from('menu_categories')
@@ -554,7 +556,12 @@ async function addMenuItem(event) {
             .eq('slug', formData.get('category'))
             .single();
         
-        if (catError) throw catError;
+        if (catError) {
+            console.error('Category error:', catError);
+            throw catError;
+        }
+        
+        console.log('Found category:', category);
         
         const { error } = await window.supabaseClient
             .from('menu_items')
@@ -574,7 +581,8 @@ async function addMenuItem(event) {
         
     } catch (error) {
         console.error('Error adding menu item:', error);
-        showNotification('ไม่สามารถเพิ่มเมนูได้');
+        console.error('Error details:', error.message, error.details);
+        showNotification(`ไม่สามารถเพิ่มเมนูได้: ${error.message}`);
     }
 }
 
@@ -1615,7 +1623,7 @@ async function editMenuItem(itemId) {
         
         // Fill form with existing data
         form.name.value = item.name;
-        form.category.value = item.menu_categories?.slug || 'rice';
+        form.category.value = item.menu_categories?.slug || 'recommended-dishes';
         form.price.value = item.price;
         form.description.value = item.description || '';
         
