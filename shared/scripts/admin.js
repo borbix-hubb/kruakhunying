@@ -211,6 +211,9 @@ function loadOrders(filter = 'all') {
     
     // Update notification badge
     updateNotificationBadge();
+    
+    // Update dashboard stats whenever orders are loaded
+    updateDashboardStats();
 }
 
 function createOrderRow(order) {
@@ -976,6 +979,75 @@ function showNotification(message) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// Update dashboard statistics - now updates order status counts
+async function updateDashboardStats() {
+    try {
+        // Count orders by status
+        let pendingCount = 0;
+        let preparingCount = 0;
+        let completedToday = 0;
+        let totalToday = 0;
+        
+        if (window.supabaseClient) {
+            const today = new Date();
+            const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+            
+            // Get all orders
+            const { data: allOrders, error } = await window.supabaseClient
+                .from('orders')
+                .select('status, created_at');
+            
+            if (!error && allOrders) {
+                // Count by status
+                allOrders.forEach(order => {
+                    if (order.status === 'pending') pendingCount++;
+                    else if (order.status === 'preparing') preparingCount++;
+                    
+                    // Count today's orders
+                    const orderDate = new Date(order.created_at);
+                    if (orderDate >= startOfToday) {
+                        totalToday++;
+                        if (order.status === 'completed') completedToday++;
+                    }
+                });
+            }
+        } else {
+            // Use local orders array as fallback
+            orders.forEach(order => {
+                if (order.status === 'pending') pendingCount++;
+                else if (order.status === 'preparing') preparingCount++;
+                
+                // Count today's orders
+                const today = new Date();
+                const orderDate = new Date(order.timestamp);
+                if (orderDate.toDateString() === today.toDateString()) {
+                    totalToday++;
+                    if (order.status === 'completed') completedToday++;
+                }
+            });
+        }
+        
+        // Update UI
+        const pendingEl = document.getElementById('pendingOrders');
+        const preparingEl = document.getElementById('preparingOrders');
+        const completedEl = document.getElementById('completedOrders');
+        const totalEl = document.getElementById('totalTodayOrders');
+        
+        if (pendingEl) pendingEl.textContent = pendingCount;
+        if (preparingEl) preparingEl.textContent = preparingCount;
+        if (completedEl) completedEl.textContent = completedToday;
+        if (totalEl) totalEl.textContent = totalToday;
+        
+    } catch (error) {
+        console.error('Error updating dashboard stats:', error);
+        // Set default values on error
+        document.getElementById('pendingOrders').textContent = '0';
+        document.getElementById('preparingOrders').textContent = '0';
+        document.getElementById('completedOrders').textContent = '0';
+        document.getElementById('totalTodayOrders').textContent = '0';
+    }
 }
 
 // Update report summary with real data

@@ -80,52 +80,52 @@
                 </div>
             </header>
 
-            <!-- Stats Cards -->
-            <div class="stats-grid">
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: var(--gradient);">
-                        <i class="fas fa-shopping-cart"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>คำสั่งซื้อวันนี้</h3>
-                        <p class="stat-value" id="dashTodayOrders">0</p>
-                        <p class="stat-change" id="dashTodayOrdersChange">ไม่มีข้อมูลเปรียบเทียบ</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
-                        <i class="fas fa-coins"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>รายได้วันนี้</h3>
-                        <p class="stat-value" id="dashTodaySales">฿0</p>
-                        <p class="stat-change" id="dashTodaySalesChange">ไม่มีข้อมูลเปรียบเทียบ</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
-                        <i class="fas fa-clock"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>ลูกค้าใหม่</h3>
-                        <p class="stat-value" id="dashNewCustomers">0</p>
-                        <p class="stat-change" id="dashNewCustomersChange">วันนี้</p>
-                    </div>
-                </div>
-                <div class="stat-card">
-                    <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div class="stat-info">
-                        <h3>เมนูยอดนิยม</h3>
-                        <p class="stat-value" id="dashPopularItem">ไม่มีข้อมูล</p>
-                        <p class="stat-change" id="dashPopularItemCount">-</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Orders Section -->
             <section id="orders" class="content-section">
+                <!-- Order Status Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #FFA500 0%, #FF8C00 100%);">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>รอดำเนินการ</h3>
+                            <p class="stat-value" id="pendingOrders">0</p>
+                            <p class="stat-change">คิว</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4169E1 0%, #1E90FF 100%);">
+                            <i class="fas fa-fire"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>กำลังทำ</h3>
+                            <p class="stat-value" id="preparingOrders">0</p>
+                            <p class="stat-change">คิว</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #32CD32 0%, #228B22 100%);">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>เสร็จแล้ว</h3>
+                            <p class="stat-value" id="completedOrders">0</p>
+                            <p class="stat-change">วันนี้</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #FF1493 0%, #FF69B4 100%);">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="stat-info">
+                            <h3>ทั้งหมดวันนี้</h3>
+                            <p class="stat-value" id="totalTodayOrders">0</p>
+                            <p class="stat-change">คิว</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="section-header">
                     <h2>คำสั่งซื้อล่าสุด</h2>
                     <div class="filter-buttons">
