@@ -118,11 +118,11 @@ function getCategorySlug(categoryName) {
         'อาหารจานเดียว': 'rice',
         'อาหารประเภทเส้น': 'noodle',
         'ประเภทกับข้าว': 'sidedish',
-        'ประเภทยำ': 'sidedish',
-        'ประเภทน้ำตก': 'sidedish',
-        'ประเภทตำ': 'sidedish',
-        'เมนูทานเล่น': 'sidedish',
-        'เมนูเพิ่มเติม': 'sidedish'
+        'ประเภทยำ': 'salad',
+        'ประเภทน้ำตก': 'grill',
+        'ประเภทตำ': 'papaya',
+        'เมนูทานเล่น': 'snack',
+        'เมนูเพิ่มเติม': 'extra'
     };
     return categoryMap[categoryName] || 'rice';
 }
@@ -242,7 +242,7 @@ function filterCategory(category) {
         tab.classList.remove('active');
     });
     event.target.classList.add('active');
-    loadMenu();
+    displayMenu();
 }
 
 // Search menu
