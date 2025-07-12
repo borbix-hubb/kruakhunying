@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #e0e0e0;
+            border-radius: 5px;
+        }
+        .error {
+            color: #d32f2f;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .success {
+            color: #388e3c;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+        }
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+        }
+        button:hover {
+            background: #d81b60;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ทดสอบ Admin Dashboard</h1>
+        
+        <div class="section">
+            <h2>1. ตรวจสอบการเชื่อมต่อ Supabase</h2>
+            <button onclick="testConnection()">ทดสอบการเชื่อมต่อ</button>
+            <div id="connectionResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. ตรวจสอบคำสั่งซื้อ</h2>
+            <button onclick="loadOrders()">โหลดคำสั่งซื้อ</button>
+            <div id="ordersResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. ตรวจสอบเมนู</h2>
+            <button onclick="loadMenu()">โหลดเมนู</button>
+            <div id="menuResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. Console Log</h2>
+            <pre id="consoleLog"></pre>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://znmdqqrrwfkwjunxgleg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpubWRxcXJyd2Zrd2p1bnhnbGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1MzU2ODQsImV4cCI6MjA2NzExMTY4NH0.FVRH7GKUVb5WZIGgwoE6jwWneBeyQPD-DRCnSRW-FvM';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const log = [];
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('th-TH');
+            log.push(`[${timestamp}] ${type.toUpperCase()}: ${message}`);
+            document.getElementById('consoleLog').textContent = log.join('\n');
+        }
+        
+        async function testConnection() {
+            const result = document.getElementById('connectionResult');
+            result.innerHTML = '<p>กำลังทดสอบ...</p>';
+            
+            try {
+                addLog('Testing Supabase connection...');
+                
+                // Test simple query
+                const { data, error } = await supabaseClient
+                    .from('menu_categories')
+                    .select('*');
+                
+                if (error) {
+                    addLog(`Connection error: ${error.message}`, 'error');
+                    result.innerHTML = `<div class="error">❌ เชื่อมต่อไม่สำเร็จ: ${error.message}</div>`;
+                } else {
+                    addLog(`Connected! Found ${data.length} categories`, 'success');
+                    result.innerHTML = `<div class="success">✅ เชื่อมต่อสำเร็จ! พบ ${data.length} หมวดหมู่</div>`;
+                }
+            } catch (e) {
+                addLog(`Exception: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function loadOrders() {
+            const result = document.getElementById('ordersResult');
+            result.innerHTML = '<p>กำลังโหลด...</p>';
+            
+            try {
+                addLog('Loading orders...');
+                
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(10);
+                
+                if (error) {
+                    addLog(`Orders error: ${error.message}`, 'error');
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                } else {
+                    addLog(`Found ${data.length} orders`, 'success');
+                    
+                    if (data.length === 0) {
+                        result.innerHTML = '<div class="success">✅ เชื่อมต่อสำเร็จ แต่ยังไม่มีคำสั่งซื้อ</div>';
+                    } else {
+                        let html = `<div class="success">✅ พบ ${data.length} คำสั่งซื้อ</div>`;
+                        html += '<table><tr><th>Order ID</th><th>ลูกค้า</th><th>ที่อยู่</th><th>รายการ</th><th>ราคา</th><th>สถานะ</th></tr>';
+                        
+                        data.forEach(order => {
+                            const customer = order.customers || {};
+                            const items = order.order_items || [];
+                            const itemsList = items.map(item => 
+                                `${item.menu_items?.name || 'Unknown'} x${item.quantity}`
+                            ).join(', ');
+                            
+                            html += `<tr>
+                                <td>${order.order_number || order.id}</td>
+                                <td>${customer.name || 'ไม่ระบุ'}</td>
+                                <td>${order.delivery_dorm || customer.dorm || '-'} ${order.delivery_room || customer.room || '-'}</td>
+                                <td>${itemsList || '-'}</td>
+                                <td>฿${order.total_amount}</td>
+                                <td>${order.status}</td>
+                            </tr>`;
+                        });
+                        
+                        html += '</table>';
+                        result.innerHTML = html;
+                    }
+                }
+            } catch (e) {
+                addLog(`Exception: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function loadMenu() {
+            const result = document.getElementById('menuResult');
+            result.innerHTML = '<p>กำลังโหลด...</p>';
+            
+            try {
+                addLog('Loading menu items...');
+                
+                const { data, error } = await supabaseClient
+                    .from('menu_items')
+                    .select(`
+                        *,
+                        menu_categories (
+                            name
+                        )
+                    `)
+                    .limit(10);
+                
+                if (error) {
+                    addLog(`Menu error: ${error.message}`, 'error');
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                } else {
+                    addLog(`Found ${data.length} menu items`, 'success');
+                    
+                    let html = `<div class="success">✅ พบ ${data.length} เมนู</div>`;
+                    html += '<table><tr><th>ID</th><th>ชื่อเมนู</th><th>หมวดหมู่</th><th>ราคา</th><th>พร้อมขาย</th></tr>';
+                    
+                    data.forEach(item => {
+                        html += `<tr>
+                            <td>${item.id}</td>
+                            <td>${item.name}</td>
+                            <td>${item.menu_categories?.name || '-'}</td>
+                            <td>฿${item.price}</td>
+                            <td>${item.is_available ? '✅' : '❌'}</td>
+                        </tr>`;
+                    });
+                    
+                    html += '</table>';
+                    result.innerHTML = html;
+                }
+            } catch (e) {
+                addLog(`Exception: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Auto test connection on load
+        window.addEventListener('load', () => {
+            addLog('Page loaded, ready to test');
+            testConnection();
+        });
+    </script>
+</body>
+</html>
