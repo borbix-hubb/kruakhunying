@@ -355,9 +355,8 @@ async function submitOrder(event) {
                 .from('customers')
                 .update({
                     name: customerData.name,
-                    default_dorm: customerData.dorm,
-                    default_room: customerData.room,
-                    updated_at: new Date().toISOString()
+                    dorm: customerData.dorm,
+                    room: customerData.room
                 })
                 .eq('id', customerId);
         } else {
@@ -367,8 +366,8 @@ async function submitOrder(event) {
                 .insert([{
                     name: customerData.name,
                     phone: customerData.phone,
-                    default_dorm: customerData.dorm,
-                    default_room: customerData.room
+                    dorm: customerData.dorm,
+                    room: customerData.room
                 }])
                 .select()
                 .single();
@@ -381,10 +380,12 @@ async function submitOrder(event) {
         const { data: order, error: orderError } = await window.supabaseClient
             .from('orders')
             .insert([{
+                order_number: generateOrderId(),
                 customer_id: customerId,
                 delivery_dorm: customerData.dorm,
                 delivery_room: customerData.room,
-                delivery_note: customerData.note,
+                delivery_note: customerData.note || null,
+                note: customerData.note || null,
                 total_amount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
                 status: 'pending',
                 payment_method: 'pending'
