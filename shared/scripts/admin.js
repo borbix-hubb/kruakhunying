@@ -1,17 +1,5 @@
-// Store orders data with some initial mock data
-let orders = [
-    {
-        id: 'ORD001',
-        customer: { name: 'สมชาย', phone: '081-234-5678', dorm: 'หอ A', room: '201' },
-        items: [
-            { name: 'ข้าวผัดกุ้ง', quantity: 1, price: 50 },
-            { name: 'ชาเย็น', quantity: 1, price: 25 }
-        ],
-        total: 75,
-        status: 'pending',
-        timestamp: new Date()
-    }
-];
+// Store orders data - start empty, will load from Supabase
+let orders = [];
 
 // Initialize
 document.addEventListener('DOMContentLoaded', async () => {
@@ -39,7 +27,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         } catch (error) {
             console.error('Failed to load orders from Supabase:', error);
-            // Use mock data if Supabase fails
+            // Show empty table if Supabase fails
+            orders = [];
             loadOrders();
         }
         
@@ -135,8 +124,9 @@ async function loadOrdersFromSupabase() {
         console.log(`Found ${data?.length || 0} orders`);
         
         if (!data || data.length === 0) {
-            // Keep mock data if no real data
-            console.log('No orders found in database, keeping mock data');
+            // No orders in database
+            console.log('No orders found in database');
+            orders = [];
             loadOrders();
             return;
         }
@@ -176,9 +166,15 @@ async function loadOrdersFromSupabase() {
         
     } catch (error) {
         console.error('Error loading orders:', error);
-        // Don't show error notification, just use mock data
-        console.log('Failed to load from Supabase, using mock data');
+        // Show empty table on error
+        console.log('Failed to load from Supabase');
+        orders = [];
         loadOrders();
+        
+        // Show error in console for debugging
+        if (error.message) {
+            console.error('Supabase error details:', error.message);
+        }
     }
 }
 
@@ -192,10 +188,24 @@ function loadOrders(filter = 'all') {
         filteredOrders = orders.filter(order => order.status === filter);
     }
     
-    filteredOrders.forEach(order => {
-        const row = createOrderRow(order);
-        tbody.appendChild(row);
-    });
+    if (filteredOrders.length === 0) {
+        // Show empty message
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="7" style="text-align: center; padding: 40px; color: #999;">
+                    <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
+                    ไม่มีคำสั่งซื้อ${filter !== 'all' ? 'ในสถานะนี้' : 'ในระบบ'}
+                    <br>
+                    <small>คำสั่งซื้อใหม่จะแสดงที่นี่ทันทีเมื่อลูกค้าสั่งอาหาร</small>
+                </td>
+            </tr>
+        `;
+    } else {
+        filteredOrders.forEach(order => {
+            const row = createOrderRow(order);
+            tbody.appendChild(row);
+        });
+    }
     
     // Update notification badge
     updateNotificationBadge();
