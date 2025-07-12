@@ -26,16 +26,23 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('adminName').textContent = 'admin.borbix';
         }
         
+        // Setup navigation first
+        setupNavigation();
+        
         // Try to load from Supabase, but continue even if it fails
         try {
             await loadOrdersFromSupabase();
+            // Make sure to display orders if we're on orders page
+            const activeSection = document.querySelector('.content-section:not([style*="none"])');
+            if (!activeSection || activeSection.id === 'orders') {
+                loadOrders();
+            }
         } catch (error) {
             console.error('Failed to load orders from Supabase:', error);
             // Use mock data if Supabase fails
             loadOrders();
         }
         
-        setupNavigation();
         setupRealtimeOrderSubscription();
         checkNotifications();
         
@@ -134,8 +141,13 @@ async function loadOrdersFromSupabase() {
             return;
         }
         
+        // Clear existing orders (except mock data if no real data)
+        if (data.length > 0) {
+            orders = [];
+        }
+        
         // Transform data to match our format
-        orders = data.map(order => ({
+        const newOrders = data.map(order => ({
             id: order.order_number || `ORD${order.id.toString().padStart(6, '0')}`,
             customer: {
                 name: order.customers?.name || 'ไม่ระบุชื่อ',
@@ -154,6 +166,12 @@ async function loadOrdersFromSupabase() {
             timestamp: new Date(order.created_at)
         }));
         
+        // Add new orders to the beginning of array
+        orders = [...newOrders];
+        
+        console.log(`Updated orders array with ${orders.length} orders`);
+        
+        // Always update UI after loading
         loadOrders();
         
     } catch (error) {
@@ -837,6 +855,12 @@ async function loadCategoryChart() {
 
 // Setup realtime order subscription
 function setupRealtimeOrderSubscription() {
+    // Check if Supabase client exists
+    if (!window.supabaseClient) {
+        console.log('Supabase client not available for realtime subscription');
+        return;
+    }
+    
     // Subscribe to INSERT events on orders table
     const subscription = window.supabaseClient
         .channel('orders-channel')
@@ -851,6 +875,12 @@ function setupRealtimeOrderSubscription() {
                 
                 // Reload orders to get complete data with relations
                 await loadOrdersFromSupabase();
+                
+                // Update UI if we're on orders page
+                const ordersSection = document.getElementById('orders');
+                if (ordersSection && ordersSection.style.display !== 'none') {
+                    loadOrders();
+                }
                 
                 // Show notification
                 showNotification('มีคำสั่งซื้อใหม่!');
@@ -874,6 +904,12 @@ function setupRealtimeOrderSubscription() {
                 console.log('Order updated:', payload);
                 // Reload orders to get updated data
                 await loadOrdersFromSupabase();
+                
+                // Update UI if we're on orders page
+                const ordersSection = document.getElementById('orders');
+                if (ordersSection && ordersSection.style.display !== 'none') {
+                    loadOrders();
+                }
             }
         )
         .subscribe();
