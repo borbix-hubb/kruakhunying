@@ -16,7 +16,14 @@
 ### 3. ตั้งค่า Authentication
 1. ไปที่ Authentication > Providers
 2. เปิดใช้งาน Email provider
-3. ตั้งค่า Site URL เป็น URL ของเว็บไซต์คุณ
+3. ไปที่ Authentication > URL Configuration
+4. ตั้งค่า:
+   - Site URL: `https://borbix-hubb.github.io/kruakhunying`
+   - Redirect URLs (เพิ่มทั้งหมด):
+     - `https://borbix-hubb.github.io/kruakhunying/admin/dashboard.html`
+     - `https://borbix-hubb.github.io/kruakhunying/admin/login.html`
+     - `http://localhost:8000` (สำหรับทดสอบ)
+     - `http://127.0.0.1:5500` (สำหรับ VS Code Live Server)
 
 ### 4. ตั้งค่า API Keys
 1. ไปที่ Settings > API
