@@ -170,24 +170,34 @@
             const currentEmail = document.getElementById('currentEmail');
             
             try {
-                const { data: { user }, error } = await window.supabaseClient.auth.getUser();
+                // First check session
+                const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
                 
-                if (error) throw error;
+                if (sessionError) throw sessionError;
                 
-                if (user) {
-                    currentEmail.innerHTML = `
-                        <strong>Email:</strong> ${user.email}<br>
-                        <strong>ID:</strong> ${user.id}<br>
-                        <strong>Created:</strong> ${new Date(user.created_at).toLocaleString('th-TH')}
-                    `;
-                    
-                    message.className = 'message success';
-                    message.textContent = '✅ พบ Auth User: ' + user.email;
-                } else {
-                    currentEmail.textContent = 'ไม่พบ Auth User (กรุณา login ก่อน)';
+                if (!session) {
+                    currentEmail.textContent = 'ไม่พบ Auth Session (กรุณา login ก่อน)';
                     message.className = 'message error';
-                    message.textContent = '❌ ไม่พบ Auth User';
+                    message.textContent = '❌ Error: Auth session missing!';
+                    
+                    // Show login prompt
+                    setTimeout(() => {
+                        if (confirm('ไม่พบ session ต้องการไปหน้า login?')) {
+                            window.location.href = './login.html';
+                        }
+                    }, 1000);
+                    return;
                 }
+                
+                const user = session.user;
+                currentEmail.innerHTML = `
+                    <strong>Email:</strong> ${user.email}<br>
+                    <strong>ID:</strong> ${user.id}<br>
+                    <strong>Created:</strong> ${new Date(user.created_at).toLocaleString('th-TH')}
+                `;
+                
+                message.className = 'message success';
+                message.textContent = '✅ พบ Auth User: ' + user.email;
             } catch (error) {
                 message.className = 'message error';
                 message.textContent = '❌ Error: ' + error.message;
@@ -199,11 +209,20 @@
             const message = document.getElementById('message');
             
             try {
-                // Get current auth user
-                const { data: { user }, error: userError } = await window.supabaseClient.auth.getUser();
+                // First check session
+                const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
                 
-                if (userError) throw userError;
-                if (!user) throw new Error('กรุณา login ก่อน');
+                if (sessionError) throw sessionError;
+                if (!session) {
+                    message.className = 'message error';
+                    message.textContent = '❌ ไม่พบ session กรุณา login ก่อน';
+                    setTimeout(() => {
+                        window.location.href = './login.html';
+                    }, 2000);
+                    return;
+                }
+                
+                const user = session.user;
                 
                 // Check if admin exists
                 const { data: existingAdmin, error: checkError } = await window.supabaseClient
