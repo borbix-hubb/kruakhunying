@@ -150,8 +150,7 @@ async function loadOrdersFromSupabase() {
             items: order.order_items?.map(item => ({
                 name: item.menu_items?.name || 'ไม่ระบุ',
                 quantity: item.quantity,
-                price: item.price,
-                note: item.note || ''
+                price: item.price
             })) || [],
             total: order.total_amount,
             status: order.status || 'pending',
