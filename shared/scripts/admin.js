@@ -162,7 +162,7 @@ async function loadOrdersFromSupabase() {
             total: order.total_amount,
             status: order.status || 'pending',
             note: order.note || order.delivery_note,
-            paymentMethod: order.payment_method || 'cash',
+            paymentMethod: order.payment_method || 'เงินสด',
             timestamp: new Date(order.created_at)
         }));
         
@@ -233,7 +233,7 @@ function createOrderRow(order) {
         if (item.note) itemText += ` - ${item.note}`;
         return itemText;
     }).join(', ');
-    const paymentMethod = order.paymentMethod || 'เงินสด';
+    const paymentMethod = getPaymentMethodText(order.paymentMethod);
     
     tr.innerHTML = `
         <td>${order.id}</td>
@@ -280,7 +280,7 @@ function getPaymentMethodText(method) {
         promptpay: 'PromptPay',
         transfer: 'โอนเงิน'
     };
-    return methodMap[method] || method;
+    return methodMap[method] || method || 'เงินสด';
 }
 
 function getDormName(dorm) {

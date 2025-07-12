@@ -70,6 +70,14 @@
                 
                 if (orders && orders.length > 0) {
                     addDebugMessage(`Sample order: ${JSON.stringify(orders[0], null, 2)}`, 'info');
+                    
+                    // Check if payment_method column exists
+                    const sampleOrder = orders[0];
+                    if (sampleOrder.hasOwnProperty('payment_method')) {
+                        addDebugMessage(`✓ payment_method column exists: ${sampleOrder.payment_method}`, 'success');
+                    } else {
+                        addDebugMessage('⚠️ payment_method column missing!', 'error');
+                    }
                 }
                 
                 // Check order_items table
