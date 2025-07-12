@@ -346,6 +346,9 @@ async function updateOrderStatus(orderId, newStatus) {
         order.status = newStatus;
         loadOrders();
         
+        // Update dashboard statistics immediately
+        await updateDashboardStats();
+        
         // Send notification
         showNotification(`อัพเดทสถานะ ${order.id} เป็น ${getStatusText(newStatus)}`);
         
@@ -927,6 +930,9 @@ function setupRealtimeOrderSubscription() {
                 // Reload orders to get updated data
                 await loadOrdersFromSupabase();
                 
+                // Update dashboard statistics immediately
+                await updateDashboardStats();
+                
                 // Update UI if we're on orders page
                 const ordersSection = document.getElementById('orders');
                 if (ordersSection && ordersSection.style.display !== 'none') {
@@ -984,10 +990,15 @@ async function updateReportSummary() {
         const startOfMonth = new Date(today);
         startOfMonth.setDate(today.getDate() - 30);
         
-        // Get today's data
+        // Get today's data with room details
         const { data: todayData } = await window.supabaseClient
             .from('orders')
-            .select('total_amount')
+            .select(`
+                total_amount,
+                delivery_dorm,
+                delivery_room,
+                customers (dorm, room)
+            `)
             .gte('created_at', startOfToday.toISOString());
         
         // Get week's data
@@ -1013,9 +1024,32 @@ async function updateReportSummary() {
         
         const avgOrderValue = monthOrders > 0 ? monthSales / monthOrders : 0;
         
+        // Calculate room-wise orders for today
+        let roomSummary = '';
+        if (todayData && todayData.length > 0) {
+            const roomCounts = {};
+            todayData.forEach(order => {
+                const dorm = order.delivery_dorm || order.customers?.dorm || '';
+                const room = order.delivery_room || order.customers?.room || '';
+                const roomKey = `${dorm}-${room}`;
+                
+                if (dorm && room) {
+                    roomCounts[roomKey] = (roomCounts[roomKey] || 0) + 1;
+                }
+            });
+            
+            const roomEntries = Object.entries(roomCounts)
+                .sort((a, b) => b[1] - a[1]) // Sort by count desc
+                .slice(0, 3); // Show top 3 rooms
+            
+            if (roomEntries.length > 0) {
+                roomSummary = roomEntries.map(([room, count]) => `${room}: ${count}ออเดอร์`).join(', ');
+            }
+        }
+        
         // Update UI
         document.getElementById('todaySales').textContent = `฿${todaySales.toLocaleString()}`;
-        document.getElementById('todayOrders').textContent = `${todayOrders} ออเดอร์`;
+        document.getElementById('todayOrders').textContent = roomSummary || `${todayOrders} ออเดอร์`;
         
         document.getElementById('weekSales').textContent = `฿${weekSales.toLocaleString()}`;
         document.getElementById('weekOrders').textContent = `${weekOrders} ออเดอร์`;
