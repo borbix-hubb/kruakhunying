@@ -235,7 +235,24 @@
                             is_active: true
                         }]);
                     
-                    if (insertError) throw insertError;
+                    if (insertError) {
+                        // If RLS error, show instructions
+                        if (insertError.message.includes('row-level security')) {
+                            message.className = 'message error';
+                            message.innerHTML = `
+                                ❌ ไม่สามารถสร้าง Admin ได้เนื่องจาก RLS Policy<br>
+                                <strong>วิธีแก้:</strong><br>
+                                1. ไปที่ Supabase Dashboard > SQL Editor<br>
+                                2. รันไฟล์ database/fix-rls-admin.sql<br>
+                                3. กลับมา login ใหม่อีกครั้ง
+                            `;
+                            statusText.textContent = 'ต้องแก้ไข RLS Policy ก่อน';
+                            loginBtn.disabled = false;
+                            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login & สร้าง Admin';
+                            return;
+                        }
+                        throw insertError;
+                    }
                     
                     message.textContent = '✅ Login และสร้าง Admin ใหม่สำเร็จ!';
                 }
