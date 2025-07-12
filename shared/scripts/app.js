@@ -199,7 +199,7 @@ function displayMenu() {
 function createMenuItemElement(item) {
     const div = document.createElement('div');
     div.className = 'menu-item';
-    div.onclick = () => showItemDetail(item);
+    div.onclick = () => showItemOptions(item.id);
     
     const badges = [];
     if (item.popular) badges.push('<span class="badge badge-popular">ยอดนิยม</span>');

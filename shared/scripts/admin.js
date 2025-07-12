@@ -503,7 +503,14 @@ function showAddMenuModal() {
 }
 
 function closeAddMenuModal() {
-    document.getElementById('addMenuModal').classList.remove('active');
+    const modal = document.getElementById('addMenuModal');
+    const form = document.getElementById('addMenuForm');
+    const modalHeader = modal.querySelector('.modal-header h2');
+    
+    modal.classList.remove('active');
+    form.reset();
+    form.onsubmit = addMenuItem;
+    modalHeader.textContent = 'เพิ่มเมนูใหม่';
 }
 
 async function addMenuItem(event) {
@@ -1619,6 +1626,7 @@ async function editMenuItem(itemId) {
                 // Reset form submit handler
                 form.onsubmit = addMenuItem;
                 modalHeader.textContent = 'เพิ่มเมนูใหม่';
+                form.reset();
                 
             } catch (error) {
                 console.error('Error updating menu item:', error);
