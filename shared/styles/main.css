@@ -307,6 +307,12 @@ body {
     margin-bottom: 1rem;
 }
 
+/* Admin Link */
+.admin-link {
+    text-align: center;
+    margin-top: 2rem;
+}
+
 /* Footer */
 .footer {
     background: var(--dark-color);
