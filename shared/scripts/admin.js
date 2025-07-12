@@ -150,11 +150,13 @@ async function loadOrdersFromSupabase() {
             items: order.order_items?.map(item => ({
                 name: item.menu_items?.name || 'ไม่ระบุ',
                 quantity: item.quantity,
-                price: item.price
+                price: item.price,
+                note: item.note || ''
             })) || [],
             total: order.total_amount,
             status: order.status || 'pending',
             note: order.note || order.delivery_note,
+            paymentMethod: order.payment_method || 'cash',
             timestamp: new Date(order.created_at)
         }));
         
@@ -1143,6 +1145,14 @@ async function updateReportSummary() {
         document.getElementById('monthSales').textContent = `฿${monthSales.toLocaleString()}`;
         document.getElementById('monthOrders').textContent = `${monthOrders} ออเดอร์`;
         
+        // Display current month name
+        const monthNames = ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 
+                          'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'];
+        const currentMonthEl = document.getElementById('currentMonth');
+        if (currentMonthEl) {
+            currentMonthEl.textContent = `(${monthNames[today.getMonth()]} ${today.getFullYear() + 543})`;
+        }
+        
         document.getElementById('avgOrderValue').textContent = `฿${avgOrderValue.toFixed(2)}`;
         document.getElementById('totalOrders').textContent = `ทั้งหมด ${monthOrders} ออเดอร์`;
         
@@ -1152,7 +1162,7 @@ async function updateReportSummary() {
 }
 
 // Date range functions for reports
-function updateReportsDateRange() {
+async function updateReportsDateRange() {
     const startDate = new Date(document.getElementById('startDate').value);
     const endDate = new Date(document.getElementById('endDate').value);
     
@@ -1166,7 +1176,58 @@ function updateReportsDateRange() {
         return;
     }
     
-    loadReports(startDate, endDate);
+    await loadReports(startDate, endDate);
+    await loadDailyReport(startDate, endDate);
+}
+
+// Load daily report
+async function loadDailyReport(startDate, endDate) {
+    try {
+        if (!window.supabaseClient) return;
+        
+        const { data: orders, error } = await window.supabaseClient
+            .from('orders')
+            .select('created_at, total_amount, status')
+            .gte('created_at', startDate.toISOString())
+            .lte('created_at', endDate.toISOString())
+            .order('created_at');
+        
+        if (error) throw error;
+        
+        // Group by date
+        const dailyData = {};
+        orders.forEach(order => {
+            const date = new Date(order.created_at).toLocaleDateString('th-TH');
+            if (!dailyData[date]) {
+                dailyData[date] = { count: 0, total: 0 };
+            }
+            dailyData[date].count++;
+            dailyData[date].total += parseFloat(order.total_amount);
+        });
+        
+        // Display daily report
+        const tbody = document.getElementById('dailyReportBody');
+        const dailyReportDiv = document.getElementById('dailyReport');
+        
+        if (Object.keys(dailyData).length > 0) {
+            tbody.innerHTML = Object.entries(dailyData)
+                .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+                .map(([date, data]) => `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${data.count} ออเดอร์</td>
+                        <td>฿${data.total.toLocaleString()}</td>
+                    </tr>
+                `).join('');
+            
+            dailyReportDiv.style.display = 'block';
+        } else {
+            dailyReportDiv.style.display = 'none';
+        }
+        
+    } catch (error) {
+        console.error('Error loading daily report:', error);
+    }
 }
 
 
@@ -1357,8 +1418,86 @@ document.addEventListener('click', (e) => {
 });
 
 // Edit menu item
-function editMenuItem(itemId) {
-    showNotification('กำลังพัฒนาฟังก์ชันแก้ไขเมนู');
+async function editMenuItem(itemId) {
+    try {
+        // Get menu item data
+        const { data: item, error } = await window.supabaseClient
+            .from('menu_items')
+            .select(`
+                *,
+                menu_categories (
+                    name,
+                    slug
+                )
+            `)
+            .eq('id', itemId)
+            .single();
+        
+        if (error) throw error;
+        
+        // Create edit modal (reuse add menu modal)
+        const modal = document.getElementById('addMenuModal');
+        const modalHeader = modal.querySelector('.modal-header h2');
+        const form = document.getElementById('addMenuForm');
+        
+        // Change modal title
+        modalHeader.textContent = 'แก้ไขเมนู';
+        
+        // Fill form with existing data
+        form.name.value = item.name;
+        form.category.value = item.menu_categories?.slug || 'rice';
+        form.price.value = item.price;
+        form.description.value = item.description || '';
+        
+        // Change form submit handler
+        form.onsubmit = async (event) => {
+            event.preventDefault();
+            
+            const formData = new FormData(form);
+            
+            try {
+                // Get category ID from slug
+                const { data: category, error: catError } = await window.supabaseClient
+                    .from('menu_categories')
+                    .select('id')
+                    .eq('slug', formData.get('category'))
+                    .single();
+                
+                if (catError) throw catError;
+                
+                const { error: updateError } = await window.supabaseClient
+                    .from('menu_items')
+                    .update({
+                        name: formData.get('name'),
+                        category_id: category.id,
+                        price: parseFloat(formData.get('price')),
+                        description: formData.get('description')
+                    })
+                    .eq('id', itemId);
+                
+                if (updateError) throw updateError;
+                
+                closeAddMenuModal();
+                showNotification('แก้ไขเมนูเรียบร้อยแล้ว');
+                await loadMenuItems();
+                
+                // Reset form submit handler
+                form.onsubmit = addMenuItem;
+                modalHeader.textContent = 'เพิ่มเมนูใหม่';
+                
+            } catch (error) {
+                console.error('Error updating menu item:', error);
+                showNotification('ไม่สามารถแก้ไขเมนูได้');
+            }
+        };
+        
+        // Show modal
+        modal.classList.add('active');
+        
+    } catch (error) {
+        console.error('Error loading menu item:', error);
+        showNotification('ไม่สามารถโหลดข้อมูลเมนูได้');
+    }
 }
 
 // Delete menu item

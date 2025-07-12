@@ -197,7 +197,7 @@
                         <p class="summary-orders" id="weekOrders">0 ออเดอร์</p>
                     </div>
                     <div class="summary-card">
-                        <h3>ยอดขายเดือนนี้</h3>
+                        <h3>ยอดขายเดือนนี้ <span id="currentMonth" style="font-size: 14px; font-weight: normal;"></span></h3>
                         <p class="summary-value" id="monthSales">฿0</p>
                         <p class="summary-orders" id="monthOrders">0 ออเดอร์</p>
                     </div>
@@ -216,6 +216,24 @@
                     <h3>เมนูยอดนิยม</h3>
                     <div class="popular-list">
                         <!-- Popular items will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="daily-report" id="dailyReport" style="display: none;">
+                    <h3>รายงานรายวัน</h3>
+                    <div class="daily-report-table">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>วันที่</th>
+                                    <th>จำนวนออเดอร์</th>
+                                    <th>ยอดขาย</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dailyReportBody">
+                                <!-- Daily report will be loaded here -->
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </section>
