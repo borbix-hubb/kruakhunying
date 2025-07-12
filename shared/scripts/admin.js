@@ -1187,22 +1187,57 @@ async function loadDailyReport(startDate, endDate) {
         
         const { data: orders, error } = await window.supabaseClient
             .from('orders')
-            .select('created_at, total_amount, status')
+            .select(`
+                *,
+                order_items (
+                    quantity,
+                    price,
+                    menu_items (
+                        name
+                    )
+                )
+            `)
             .gte('created_at', startDate.toISOString())
             .lte('created_at', endDate.toISOString())
             .order('created_at');
         
         if (error) throw error;
         
-        // Group by date
+        // Store full order data globally for detail view
+        window.dailyOrdersData = orders;
+        
+        // Group by date with menu items
         const dailyData = {};
         orders.forEach(order => {
+            const dateStr = new Date(order.created_at).toISOString().split('T')[0];
             const date = new Date(order.created_at).toLocaleDateString('th-TH');
-            if (!dailyData[date]) {
-                dailyData[date] = { count: 0, total: 0 };
+            
+            if (!dailyData[dateStr]) {
+                dailyData[dateStr] = { 
+                    displayDate: date,
+                    count: 0, 
+                    total: 0,
+                    menuItems: {},
+                    orders: []
+                };
             }
-            dailyData[date].count++;
-            dailyData[date].total += parseFloat(order.total_amount);
+            
+            dailyData[dateStr].count++;
+            dailyData[dateStr].total += parseFloat(order.total_amount);
+            dailyData[dateStr].orders.push(order);
+            
+            // Count menu items
+            order.order_items?.forEach(item => {
+                const menuName = item.menu_items?.name || 'ไม่ระบุ';
+                if (!dailyData[dateStr].menuItems[menuName]) {
+                    dailyData[dateStr].menuItems[menuName] = {
+                        quantity: 0,
+                        revenue: 0
+                    };
+                }
+                dailyData[dateStr].menuItems[menuName].quantity += item.quantity;
+                dailyData[dateStr].menuItems[menuName].revenue += item.quantity * item.price;
+            });
         });
         
         // Display daily report
@@ -1212,13 +1247,21 @@ async function loadDailyReport(startDate, endDate) {
         if (Object.keys(dailyData).length > 0) {
             tbody.innerHTML = Object.entries(dailyData)
                 .sort((a, b) => new Date(a[0]) - new Date(b[0]))
-                .map(([date, data]) => `
-                    <tr>
-                        <td>${date}</td>
-                        <td>${data.count} ออเดอร์</td>
-                        <td>฿${data.total.toLocaleString()}</td>
-                    </tr>
-                `).join('');
+                .map(([dateStr, data]) => {
+                    // Find top selling item
+                    const topItem = Object.entries(data.menuItems)
+                        .sort((a, b) => b[1].quantity - a[1].quantity)[0];
+                    
+                    return `
+                        <tr onclick="showDailyDetail('${dateStr}')" style="cursor: pointer;">
+                            <td><i class="fas fa-chevron-right"></i></td>
+                            <td>${data.displayDate}</td>
+                            <td>${data.count} ออเดอร์</td>
+                            <td>฿${data.total.toLocaleString()}</td>
+                            <td>${topItem ? `${topItem[0]} (${topItem[1].quantity})` : '-'}</td>
+                        </tr>
+                    `;
+                }).join('');
             
             dailyReportDiv.style.display = 'block';
         } else {
@@ -1228,6 +1271,99 @@ async function loadDailyReport(startDate, endDate) {
     } catch (error) {
         console.error('Error loading daily report:', error);
     }
+}
+
+// Show daily detail
+function showDailyDetail(dateStr) {
+    const orders = window.dailyOrdersData?.filter(order => 
+        order.created_at.split('T')[0] === dateStr
+    ) || [];
+    
+    const modal = document.getElementById('dailyDetailModal');
+    const title = document.getElementById('dailyDetailTitle');
+    const content = document.getElementById('dailyDetailContent');
+    
+    const date = new Date(dateStr).toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    title.textContent = `รายละเอียดยอดขาย - ${date}`;
+    
+    // Calculate menu summary
+    const menuSummary = {};
+    let totalRevenue = 0;
+    
+    orders.forEach(order => {
+        order.order_items?.forEach(item => {
+            const name = item.menu_items?.name || 'ไม่ระบุ';
+            if (!menuSummary[name]) {
+                menuSummary[name] = { quantity: 0, revenue: 0 };
+            }
+            menuSummary[name].quantity += item.quantity;
+            menuSummary[name].revenue += item.quantity * item.price;
+            totalRevenue += item.quantity * item.price;
+        });
+    });
+    
+    // Sort menu by quantity
+    const sortedMenu = Object.entries(menuSummary)
+        .sort((a, b) => b[1].quantity - a[1].quantity);
+    
+    content.innerHTML = `
+        <div class="daily-summary" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 30px;">
+            <div style="text-align: center; padding: 20px; background: #f0f0f0; border-radius: 10px;">
+                <h4 style="margin: 0; color: #666;">จำนวนออเดอร์</h4>
+                <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #FF6B35;">${orders.length}</p>
+            </div>
+            <div style="text-align: center; padding: 20px; background: #f0f0f0; border-radius: 10px;">
+                <h4 style="margin: 0; color: #666;">ยอดขายรวม</h4>
+                <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #4CAF50;">฿${totalRevenue.toLocaleString()}</p>
+            </div>
+            <div style="text-align: center; padding: 20px; background: #f0f0f0; border-radius: 10px;">
+                <h4 style="margin: 0; color: #666;">จำนวนเมนู</h4>
+                <p style="font-size: 32px; font-weight: bold; margin: 10px 0; color: #2196F3;">${sortedMenu.length}</p>
+            </div>
+        </div>
+        
+        <h4>สรุปยอดขายแต่ละเมนู</h4>
+        <table style="width: 100%; border-collapse: collapse;">
+            <thead>
+                <tr style="background: #f5f5f5;">
+                    <th style="padding: 10px; text-align: left;">เมนู</th>
+                    <th style="padding: 10px; text-align: center;">จำนวน</th>
+                    <th style="padding: 10px; text-align: right;">ยอดขาย</th>
+                    <th style="padding: 10px; text-align: right;">% ของยอดรวม</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${sortedMenu.map(([name, data]) => `
+                    <tr style="border-bottom: 1px solid #eee;">
+                        <td style="padding: 10px;">${name}</td>
+                        <td style="padding: 10px; text-align: center;">${data.quantity}</td>
+                        <td style="padding: 10px; text-align: right;">฿${data.revenue.toLocaleString()}</td>
+                        <td style="padding: 10px; text-align: right;">${((data.revenue / totalRevenue) * 100).toFixed(1)}%</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+            <tfoot>
+                <tr style="background: #f5f5f5; font-weight: bold;">
+                    <td style="padding: 10px;">รวมทั้งหมด</td>
+                    <td style="padding: 10px; text-align: center;">${sortedMenu.reduce((sum, [_, data]) => sum + data.quantity, 0)}</td>
+                    <td style="padding: 10px; text-align: right;">฿${totalRevenue.toLocaleString()}</td>
+                    <td style="padding: 10px; text-align: right;">100%</td>
+                </tr>
+            </tfoot>
+        </table>
+    `;
+    
+    modal.style.display = 'block';
+}
+
+// Close daily detail modal
+function closeDailyDetail() {
+    document.getElementById('dailyDetailModal').style.display = 'none';
 }
 
 
