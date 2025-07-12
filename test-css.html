@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test CSS</title>
+    <link rel="stylesheet" href="shared/styles/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .test-colors {
+            padding: 20px;
+        }
+        .color-box {
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            margin: 10px;
+            text-align: center;
+            line-height: 100px;
+            color: white;
+            border-radius: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-colors">
+        <h1>CSS Variables Test</h1>
+        <div class="color-box" style="background: var(--primary-color)">Primary</div>
+        <div class="color-box" style="background: var(--secondary-color)">Secondary</div>
+        <div class="color-box" style="background: var(--gradient)">Gradient</div>
+        
+        <h2>Components Test</h2>
+        <button class="btn-primary">Primary Button</button>
+        
+        <div class="stat-card" style="margin: 20px 0; max-width: 300px;">
+            <div class="stat-icon" style="background: var(--gradient);">
+                <i class="fas fa-shopping-bag"></i>
+            </div>
+            <div class="stat-info">
+                <h3>Test Stat</h3>
+                <p class="stat-value">123</p>
+                <p class="stat-change">Test</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
