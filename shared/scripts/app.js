@@ -576,7 +576,7 @@ async function submitOrder(event) {
                 note: customerData.note || null,
                 total_amount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
                 status: 'pending',
-                payment_method: 'pending'
+                payment_method: selectedPaymentMethod
             }])
             .select()
             .single();
@@ -787,7 +787,11 @@ function sendToLine() {
 }
 
 // Select payment method
+// Store selected payment method
+let selectedPaymentMethod = 'promptpay'; // Default to promptpay
+
 function selectPaymentMethod(method) {
+    selectedPaymentMethod = method; // Store the selected method
     const methods = document.querySelectorAll('.payment-method');
     methods.forEach(m => m.classList.remove('active'));
     
