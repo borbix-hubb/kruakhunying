@@ -126,6 +126,7 @@ body {
     color: var(--dark-color);
     cursor: pointer;
     position: relative;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .notification-badge {
@@ -392,6 +393,7 @@ body {
     border-radius: 20px;
     cursor: pointer;
     transition: all 0.3s;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 500;
 }
 
@@ -464,6 +466,7 @@ body {
     border-radius: 5px;
     cursor: pointer;
     transition: all 0.3s;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .action-btn:hover {
@@ -574,6 +577,7 @@ body {
     padding: 0.75rem 1.5rem;
     border-radius: 25px;
     cursor: pointer;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
     font-weight: 600;
     display: inline-flex;
     align-items: center;
@@ -630,6 +634,7 @@ body {
     color: white;
     font-size: 1.5rem;
     cursor: pointer;
+    font-family: 'Prompt', -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .modal-body {

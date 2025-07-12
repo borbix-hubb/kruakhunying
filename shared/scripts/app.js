@@ -1,33 +1,96 @@
 // Menu Data
-const menuData = [
-    // Rice dishes
-    { id: 1, name: "ข้าวผัดกุ้ง", category: "rice", price: 50, emoji: "🍤", description: "ข้าวผัดกุ้งสด หอมกระเทียม พริกไทย", hot: true },
-    { id: 2, name: "ข้าวผัดหมู", category: "rice", price: 45, emoji: "🥓", description: "ข้าวผัดหมูนุ่ม ใส่ไข่ดาว อร่อยมาก", popular: true },
-    { id: 3, name: "ข้าวผัดไก่", category: "rice", price: 45, emoji: "🍗", description: "ข้าวผัดไก่ หอมพริกไทย กลมกล่อม" },
-    { id: 4, name: "ข้าวผัดปู", category: "rice", price: 55, emoji: "🦀", description: "ข้าวผัดปู เนื้อปูแน่นๆ หอมมัน", recommended: true },
-    { id: 5, name: "ข้าวผัดผัก", category: "rice", price: 40, emoji: "🥦", description: "ข้าวผัดผักรวม สำหรับมังสวิรัติ สุขภาพดี" },
+let menuData = [];
+
+// Load menu from Supabase on page load
+async function loadMenuFromSupabase() {
+    try {
+        const { data, error } = await window.supabaseClient
+            .from('menu_items')
+            .select(`
+                *,
+                menu_categories (
+                    name,
+                    slug
+                )
+            `)
+            .eq('is_available', true)
+            .order('category_id');
+        
+        if (error) throw error;
+        
+        // Transform data to match our format
+        menuData = data.map(item => ({
+            id: item.id,
+            name: item.name,
+            category: item.menu_categories?.slug || 'rice',
+            price: item.price,
+            emoji: getMenuEmoji(item.category_id, item.name),
+            description: item.description || '',
+            popular: item.is_popular || false,
+            recommended: item.is_recommended || false
+        }));
+        
+        // Display menu after loading
+        displayMenu();
+        
+    } catch (error) {
+        console.error('Error loading menu:', error);
+        // Fallback to default menu
+        menuData = [
+            // Rice dishes
+            { id: 1, name: "ข้าวผัดกุ้ง", category: "rice", price: 50, emoji: "🍤", description: "ข้าวผัดกุ้งสด หอมกระเทียม พริกไทย", hot: true },
+            { id: 2, name: "ข้าวผัดหมู", category: "rice", price: 45, emoji: "🥓", description: "ข้าวผัดหมูนุ่ม ใส่ไข่ดาว อร่อยมาก", popular: true },
+            { id: 3, name: "ข้าวผัดไก่", category: "rice", price: 45, emoji: "🍗", description: "ข้าวผัดไก่ หอมพริกไทย กลมกล่อม" },
+            { id: 4, name: "ข้าวผัดปู", category: "rice", price: 55, emoji: "🦀", description: "ข้าวผัดปู เนื้อปูแน่นๆ หอมมัน", recommended: true },
+            { id: 5, name: "ข้าวผัดผัก", category: "rice", price: 40, emoji: "🥦", description: "ข้าวผัดผักรวม สำหรับมังสวิรัติ สุขภาพดี" },
+            
+            // Noodle dishes
+            { id: 6, name: "ผัดไทยกุ้งสด", category: "noodle", price: 45, emoji: "🍜", description: "ผัดไทยกุ้งสด รสชาติต้นตำรับ" },
+            { id: 7, name: "ผัดซีอิ๊วหมู", category: "noodle", price: 40, emoji: "🍝", description: "เส้นใหญ่ผัดซีอิ๊ว หมูนุ่ม" },
+            { id: 8, name: "ราดหน้าหมู", category: "noodle", price: 45, emoji: "🍲", description: "ราดหน้าเส้นใหญ่ น้ำข้นกำลังดี" },
+            { id: 9, name: "บะหมี่แห้ง", category: "noodle", price: 35, emoji: "🥟", description: "บะหมี่แห้งหมูแดง กรอบนอกนุ่มใน" },
+            { id: 10, name: "ก๋วยเตี๋ยวต้มยำ", category: "noodle", price: 40, emoji: "🌶️", description: "ต้มยำน้ำข้น รสจัดจ้าน" },
+            
+            // Side dishes
+            { id: 11, name: "ไก่ทอดกระเทียม", category: "sidedish", price: 50, emoji: "🍗", description: "ไก่ทอดกรอบ หอมกระเทียม" },
+            { id: 12, name: "หมูกรอบคั่วพริกเกลือ", category: "sidedish", price: 55, emoji: "🥓", description: "หมูกรอบ คั่วพริกเกลือ" },
+            { id: 13, name: "ผัดกะเพราหมูสับ", category: "sidedish", price: 45, emoji: "🌿", description: "กะเพราหมูสับ ใบกะเพราหอม" },
+            { id: 14, name: "ต้มยำกุ้ง", category: "sidedish", price: 60, emoji: "🦐", description: "ต้มยำกุ้งน้ำข้น รสชาติจัดจ้าน" },
+            { id: 15, name: "ยำวุ้นเส้น", category: "sidedish", price: 35, emoji: "🥗", description: "ยำวุ้นเส้น รสชาติกลมกล่อม" },
+            
+            // Drinks
+            { id: 16, name: "ชาเย็น", category: "drink", price: 25, emoji: "🧋", description: "ชาเย็นหวานมัน" },
+            { id: 17, name: "กาแฟเย็น", category: "drink", price: 25, emoji: "☕", description: "กาแฟเย็นหอมมัน" },
+            { id: 18, name: "น้ำส้ม", category: "drink", price: 20, emoji: "🍊", description: "น้ำส้มคั้นสด" },
+            { id: 19, name: "โค้ก", category: "drink", price: 15, emoji: "🥤", description: "โค้กเย็นๆ" },
+            { id: 20, name: "น้ำเปล่า", category: "drink", price: 10, emoji: "💧", description: "น้ำเปล่าเย็น" }
+        ];
+        displayMenu();
+    }
+}
+
+// Helper function to get emoji for menu item
+function getMenuEmoji(categoryId, name) {
+    // Map emojis based on category or specific items
+    const categoryEmojiMap = {
+        1: '🍚', // rice
+        2: '🍜', // noodle
+        3: '🥘', // sidedish
+        4: '🥤'  // drink
+    };
     
-    // Noodle dishes
-    { id: 6, name: "ผัดไทยกุ้งสด", category: "noodle", price: 45, emoji: "🍜", description: "ผัดไทยกุ้งสด รสชาติต้นตำรับ" },
-    { id: 7, name: "ผัดซีอิ๊วหมู", category: "noodle", price: 40, emoji: "🍝", description: "เส้นใหญ่ผัดซีอิ๊ว หมูนุ่ม" },
-    { id: 8, name: "ราดหน้าหมู", category: "noodle", price: 45, emoji: "🍲", description: "ราดหน้าเส้นใหญ่ น้ำข้นกำลังดี" },
-    { id: 9, name: "บะหมี่แห้ง", category: "noodle", price: 35, emoji: "🥟", description: "บะหมี่แห้งหมูแดง กรอบนอกนุ่มใน" },
-    { id: 10, name: "ก๋วยเตี๋ยวต้มยำ", category: "noodle", price: 40, emoji: "🌶️", description: "ต้มยำน้ำข้น รสจัดจ้าน" },
+    // Special emojis for specific items
+    if (name.includes('กุ้ง')) return '🍤';
+    if (name.includes('หมู')) return '🥓';
+    if (name.includes('ไก่')) return '🍗';
+    if (name.includes('ปู')) return '🦀';
+    if (name.includes('ผัก')) return '🥦';
+    if (name.includes('ชา')) return '🧋';
+    if (name.includes('กาแฟ')) return '☕';
+    if (name.includes('ส้ม')) return '🍊';
     
-    // Side dishes
-    { id: 11, name: "ไก่ทอดกระเทียม", category: "sidedish", price: 50, emoji: "🍗", description: "ไก่ทอดกรอบ หอมกระเทียม" },
-    { id: 12, name: "หมูกรอบคั่วพริกเกลือ", category: "sidedish", price: 55, emoji: "🥓", description: "หมูกรอบ คั่วพริกเกลือ" },
-    { id: 13, name: "ผัดกะเพราหมูสับ", category: "sidedish", price: 45, emoji: "🌿", description: "กะเพราหมูสับ ใบกะเพราหอม" },
-    { id: 14, name: "ต้มยำกุ้ง", category: "sidedish", price: 60, emoji: "🦐", description: "ต้มยำกุ้งน้ำข้น รสชาติจัดจ้าน" },
-    { id: 15, name: "ยำวุ้นเส้น", category: "sidedish", price: 35, emoji: "🥗", description: "ยำวุ้นเส้น รสชาติกลมกล่อม" },
-    
-    // Drinks
-    { id: 16, name: "ชาเย็น", category: "drink", price: 25, emoji: "🧋", description: "ชาเย็นหวานมัน" },
-    { id: 17, name: "กาแฟเย็น", category: "drink", price: 25, emoji: "☕", description: "กาแฟเย็นหอมมัน" },
-    { id: 18, name: "น้ำส้ม", category: "drink", price: 20, emoji: "🍊", description: "น้ำส้มคั้นสด" },
-    { id: 19, name: "โค้ก", category: "drink", price: 15, emoji: "🥤", description: "โค้กเย็นๆ" },
-    { id: 20, name: "น้ำเปล่า", category: "drink", price: 10, emoji: "💧", description: "น้ำเปล่าเย็น" }
-];
+    return categoryEmojiMap[categoryId] || '🍽️';
+}
 
 // Global variables
 let cart = [];
@@ -35,7 +98,8 @@ let currentCategory = 'all';
 
 // Initialize app
 document.addEventListener('DOMContentLoaded', () => {
-    loadMenu();
+    // Load menu from Supabase first
+    loadMenuFromSupabase();
     setupEventListeners();
     updateCartUI();
 });
@@ -48,8 +112,13 @@ function setupEventListeners() {
     });
 }
 
-// Load menu items
+// Load menu items (for compatibility)
 function loadMenu() {
+    displayMenu();
+}
+
+// Display menu items
+function displayMenu() {
     const menuContainer = document.getElementById('menuContainer');
     menuContainer.innerHTML = '';
     
@@ -256,33 +325,116 @@ function closeOrderModal() {
 }
 
 // Submit order
-function submitOrder(event) {
+async function submitOrder(event) {
     event.preventDefault();
     
     const formData = new FormData(event.target);
-    const orderData = {
-        orderId: generateOrderId(),
-        customer: {
-            name: formData.get('name'),
-            phone: formData.get('phone'),
-            dorm: formData.get('dorm'),
-            room: formData.get('room'),
-            note: formData.get('note')
-        },
-        items: cart,
-        total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-        timestamp: new Date()
+    const customerData = {
+        name: formData.get('name'),
+        phone: formData.get('phone'),
+        dorm: formData.get('dorm'),
+        room: formData.get('room'),
+        note: formData.get('note')
     };
     
-    // Save customer info for next time
-    saveCustomerInfo(orderData.customer);
-    
-    // Store order data temporarily
-    window.currentOrder = orderData;
-    
-    // Close order modal and show summary
-    closeOrderModal();
-    showOrderSummary(orderData);
+    try {
+        // First, save or get customer from Supabase
+        let customerId;
+        
+        // Check if customer exists
+        const { data: existingCustomer, error: customerCheckError } = await window.supabaseClient
+            .from('customers')
+            .select('id')
+            .eq('phone', customerData.phone)
+            .single();
+        
+        if (existingCustomer) {
+            customerId = existingCustomer.id;
+            // Update customer info
+            await window.supabaseClient
+                .from('customers')
+                .update({
+                    name: customerData.name,
+                    default_dorm: customerData.dorm,
+                    default_room: customerData.room,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', customerId);
+        } else {
+            // Create new customer
+            const { data: newCustomer, error: customerError } = await window.supabaseClient
+                .from('customers')
+                .insert([{
+                    name: customerData.name,
+                    phone: customerData.phone,
+                    default_dorm: customerData.dorm,
+                    default_room: customerData.room
+                }])
+                .select()
+                .single();
+            
+            if (customerError) throw customerError;
+            customerId = newCustomer.id;
+        }
+        
+        // Create order
+        const { data: order, error: orderError } = await window.supabaseClient
+            .from('orders')
+            .insert([{
+                customer_id: customerId,
+                delivery_dorm: customerData.dorm,
+                delivery_room: customerData.room,
+                delivery_note: customerData.note,
+                total_amount: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+                status: 'pending',
+                payment_method: 'pending'
+            }])
+            .select()
+            .single();
+        
+        if (orderError) throw orderError;
+        
+        // Create order items
+        const orderItems = cart.map(item => ({
+            order_id: order.id,
+            menu_item_id: item.id,
+            quantity: item.quantity,
+            price: item.price,
+            subtotal: item.price * item.quantity
+        }));
+        
+        const { error: itemsError } = await window.supabaseClient
+            .from('order_items')
+            .insert(orderItems);
+        
+        if (itemsError) throw itemsError;
+        
+        // Create order data for summary
+        const orderData = {
+            orderId: `ORD${order.id.toString().padStart(6, '0')}`,
+            customer: customerData,
+            items: cart,
+            total: order.total_amount,
+            timestamp: new Date()
+        };
+        
+        // Save customer info locally for convenience
+        saveCustomerInfo(customerData);
+        
+        // Store order data temporarily
+        window.currentOrder = orderData;
+        
+        // Close order modal and show summary
+        closeOrderModal();
+        showOrderSummary(orderData);
+        
+        // Send notification (in real app, this would trigger backend notification)
+        console.log('Order created:', order);
+        
+    } catch (error) {
+        console.error('Error submitting order:', error);
+        showNotification('เกิดข้อผิดพลาด: ' + error.message);
+    }
 }
 
 // Generate LINE message
