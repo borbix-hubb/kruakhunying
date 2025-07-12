@@ -346,7 +346,7 @@ async function submitOrder(event) {
             .from('customers')
             .select('id')
             .eq('phone', customerData.phone)
-            .single();
+            .maybeSingle();
         
         if (existingCustomer) {
             customerId = existingCustomer.id;

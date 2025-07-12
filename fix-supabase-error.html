@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>แก้ไขปัญหา Supabase Schema Cache</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #e91e63;
+            margin-bottom: 20px;
+        }
+        
+        h2 {
+            color: #333;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        .error-box {
+            background: #ffebee;
+            border: 1px solid #ef5350;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .solution-box {
+            background: #e8f5e9;
+            border: 1px solid #66bb6a;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .step {
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 5px;
+            border-left: 4px solid #e91e63;
+        }
+        
+        .step-number {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            background: #e91e63;
+            color: white;
+            text-align: center;
+            line-height: 30px;
+            border-radius: 50%;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+        
+        code {
+            background: #263238;
+            color: #aed581;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .warning {
+            background: #fff3e0;
+            border: 1px solid #ffb74d;
+            color: #e65100;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: 'Prompt', sans-serif;
+            margin: 10px 0;
+        }
+        
+        button:hover {
+            background: #d81b60;
+        }
+        
+        .success {
+            background: #e8f5e9;
+            border: 1px solid #4caf50;
+            color: #1b5e20;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>แก้ไขปัญหา Supabase Schema Cache</h1>
+        
+        <div class="error-box">
+            <strong>ข้อผิดพลาด:</strong> Could not find the 'default_dorm' column of 'customers' in the schema cache
+        </div>
+        
+        <div class="solution-box">
+            <strong>สาเหตุ:</strong> Supabase มีปัญหาเรื่อง cache ของ schema ทำให้ยังเห็นชื่อ column เก่าอยู่
+        </div>
+        
+        <h2>วิธีแก้ไข</h2>
+        
+        <div class="step">
+            <span class="step-number">1</span>
+            <strong>เปิด Supabase Dashboard</strong>
+            <p>ไปที่ <a href="https://app.supabase.com" target="_blank">app.supabase.com</a> และ login เข้าสู่ project ของคุณ</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">2</span>
+            <strong>ไปที่ SQL Editor</strong>
+            <p>คลิกที่ "SQL Editor" ในเมนูด้านซ้าย</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">3</span>
+            <strong>รัน SQL Script แก้ไข</strong>
+            <p>Copy code ด้านล่างนี้ไปวางใน SQL Editor แล้วกด "RUN"</p>
+            
+            <div class="warning">
+                <strong>⚠️ คำเตือน:</strong> Script นี้จะลบข้อมูลลูกค้าเก่าทั้งหมด!
+            </div>
+            
+            <pre>-- ลบ table customers เก่าและสร้างใหม่
+DROP TABLE IF EXISTS customers CASCADE;
+
+-- สร้าง customers table ใหม่ด้วย columns ที่ถูกต้อง
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    phone VARCHAR(20) NOT NULL UNIQUE,
+    dorm VARCHAR(50),
+    room VARCHAR(20),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW()),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- สร้าง index
+CREATE INDEX idx_customers_phone ON customers(phone);
+
+-- สร้าง trigger
+CREATE TRIGGER update_customers_updated_at BEFORE UPDATE
+    ON customers FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- เพิ่ม delivery columns ให้ orders table
+ALTER TABLE orders 
+ADD COLUMN IF NOT EXISTS delivery_dorm VARCHAR(50),
+ADD COLUMN IF NOT EXISTS delivery_room VARCHAR(20),
+ADD COLUMN IF NOT EXISTS delivery_note TEXT;
+
+-- ทำให้ order_number เป็น nullable
+ALTER TABLE orders 
+ALTER COLUMN order_number DROP NOT NULL;
+
+-- Force refresh schema cache
+CREATE TABLE IF NOT EXISTS _dummy_cache_refresh (id int);
+DROP TABLE IF EXISTS _dummy_cache_refresh;</pre>
+            
+            <button onclick="copyCode()">Copy Code</button>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">4</span>
+            <strong>Clear Browser Cache</strong>
+            <p>กด Ctrl+Shift+R (Windows) หรือ Cmd+Shift+R (Mac) เพื่อ refresh หน้าเว็บ</p>
+        </div>
+        
+        <div class="step">
+            <span class="step-number">5</span>
+            <strong>ทดสอบใหม่</strong>
+            <p>กลับไปที่หน้าสั่งอาหารและลองสั่งใหม่อีกครั้ง</p>
+        </div>
+        
+        <div class="success" id="successMessage">
+            <strong>✓ สำเร็จ!</strong> Schema ได้รับการแก้ไขแล้ว คุณสามารถกลับไปใช้งานได้ตามปกติ
+        </div>
+        
+        <h2>หากยังมีปัญหา</h2>
+        <ol>
+            <li>ลองรอ 1-2 นาที เพื่อให้ Supabase refresh cache</li>
+            <li>ลอง logout และ login ใหม่ใน Supabase Dashboard</li>
+            <li>ตรวจสอบว่า SQL script รันสำเร็จไม่มี error</li>
+            <li>ลอง restart project ใน Supabase (Settings > General > Restart project)</li>
+        </ol>
+    </div>
+    
+    <script>
+        function copyCode() {
+            const code = document.querySelector('pre').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('คัดลอก SQL code แล้ว!');
+            });
+        }
+    </script>
+</body>
+</html>
