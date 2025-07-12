@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Orders - ครัวคุณหญิง</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>Debug Orders</h1>
+    <button onclick="testConnection()">Test Supabase Connection</button>
+    <button onclick="loadOrders()">Load Orders</button>
+    <button onclick="loadCustomers()">Load Customers</button>
+    <button onclick="loadMenuItems()">Load Menu Items</button>
+    
+    <h2>Results:</h2>
+    <pre id="results" style="background: #f0f0f0; padding: 20px; border-radius: 5px;"></pre>
+
+    <script src="./shared/config/supabase.js"></script>
+    <script>
+        const resultsEl = document.getElementById('results');
+        
+        function log(message, data = null) {
+            console.log(message, data);
+            resultsEl.textContent += message + '\n';
+            if (data) {
+                resultsEl.textContent += JSON.stringify(data, null, 2) + '\n\n';
+            }
+        }
+        
+        async function testConnection() {
+            try {
+                log('Testing Supabase connection...');
+                
+                if (!window.supabaseClient) {
+                    log('ERROR: Supabase client not initialized!');
+                    return;
+                }
+                
+                // Test simple query
+                const { data, error } = await window.supabaseClient
+                    .from('orders')
+                    .select('count');
+                
+                if (error) {
+                    log('Connection error:', error);
+                } else {
+                    log('Connection successful!', data);
+                }
+            } catch (err) {
+                log('Exception:', err.message);
+            }
+        }
+        
+        async function loadOrders() {
+            try {
+                log('\nLoading orders...');
+                
+                const { data, error } = await window.supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            subtotal,
+                            note,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) {
+                    log('Error loading orders:', error);
+                } else {
+                    log(`Found ${data?.length || 0} orders:`, data);
+                }
+            } catch (err) {
+                log('Exception loading orders:', err.message);
+            }
+        }
+        
+        async function loadCustomers() {
+            try {
+                log('\nLoading customers...');
+                
+                const { data, error } = await window.supabaseClient
+                    .from('customers')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    log('Error loading customers:', error);
+                } else {
+                    log(`Found ${data?.length || 0} customers:`, data);
+                }
+            } catch (err) {
+                log('Exception loading customers:', err.message);
+            }
+        }
+        
+        async function loadMenuItems() {
+            try {
+                log('\nLoading menu items...');
+                
+                const { data, error } = await window.supabaseClient
+                    .from('menu_items')
+                    .select(`
+                        *,
+                        menu_categories (
+                            name,
+                            slug
+                        )
+                    `)
+                    .eq('is_available', true)
+                    .limit(5);
+                
+                if (error) {
+                    log('Error loading menu items:', error);
+                } else {
+                    log(`Found ${data?.length || 0} menu items:`, data);
+                }
+            } catch (err) {
+                log('Exception loading menu items:', err.message);
+            }
+        }
+        
+        // Auto-test connection on load
+        window.addEventListener('DOMContentLoaded', testConnection);
+    </script>
+</body>
+</html>
