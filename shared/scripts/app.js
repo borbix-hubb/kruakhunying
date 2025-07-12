@@ -258,6 +258,7 @@ function submitOrder(event) {
     
     const formData = new FormData(event.target);
     const orderData = {
+        orderId: generateOrderId(),
         customer: {
             name: formData.get('name'),
             phone: formData.get('phone'),
@@ -267,25 +268,15 @@ function submitOrder(event) {
         },
         items: cart,
         total: cart.reduce((sum, item) => sum + (item.price * item.quantity), 0),
-        timestamp: new Date().toISOString()
+        timestamp: new Date()
     };
     
-    // Here you would normally send to backend
-    console.log('Order submitted:', orderData);
+    // Store order data temporarily
+    window.currentOrder = orderData;
     
-    // Generate LINE message
-    const lineMessage = generateLineMessage(orderData);
-    
-    // Clear cart and close modal
-    cart = [];
-    updateCartUI();
+    // Close order modal and show summary
     closeOrderModal();
-    
-    // Show success message
-    showNotification('ส่งคำสั่งซื้อเรียบร้อยแล้ว! รอรับอาหาร 15-20 นาที');
-    
-    // In real app, would redirect to LINE or send notification
-    alert(`คำสั่งซื้อของคุณ:\n${lineMessage}`);
+    showOrderSummary(orderData);
 }
 
 // Generate LINE message
@@ -334,4 +325,118 @@ function showNotification(message) {
     setTimeout(() => {
         notification.remove();
     }, 3000);
+}
+
+// Generate order ID
+function generateOrderId() {
+    return 'ORD' + Date.now().toString().slice(-6);
+}
+
+// Show order summary
+function showOrderSummary(orderData) {
+    const modal = document.getElementById('orderSummaryModal');
+    const content = document.getElementById('orderSummaryContent');
+    
+    const itemsList = orderData.items.map(item => `
+        <div class="summary-item">
+            <span>${item.name} x ${item.quantity}</span>
+            <span>฿${item.price * item.quantity}</span>
+        </div>
+    `).join('');
+    
+    content.innerHTML = `
+        <div class="order-success">
+            <div class="success-icon">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <h3>สั่งอาหารสำเร็จ!</h3>
+            <p class="order-id">หมายเลขคำสั่งซื้อ: ${orderData.orderId}</p>
+        </div>
+        
+        <div class="order-details">
+            <h4>รายละเอียดคำสั่งซื้อ</h4>
+            <div class="summary-items">
+                ${itemsList}
+                <div class="summary-total">
+                    <strong>รวมทั้งหมด</strong>
+                    <strong>฿${orderData.total}</strong>
+                </div>
+            </div>
+            
+            <div class="delivery-info">
+                <h4>ข้อมูลจัดส่ง</h4>
+                <p><i class="fas fa-user"></i> ${orderData.customer.name}</p>
+                <p><i class="fas fa-phone"></i> ${orderData.customer.phone}</p>
+                <p><i class="fas fa-home"></i> ${orderData.customer.dorm} ห้อง ${orderData.customer.room}</p>
+                ${orderData.customer.note ? `<p><i class="fas fa-sticky-note"></i> ${orderData.customer.note}</p>` : ''}
+            </div>
+        </div>
+        
+        <div class="payment-section">
+            <h4>ชำระเงิน</h4>
+            <div class="payment-methods">
+                <div class="payment-method active">
+                    <i class="fas fa-qrcode"></i>
+                    <span>พร้อมเพย์</span>
+                </div>
+                <div class="payment-method">
+                    <i class="fas fa-money-bill-wave"></i>
+                    <span>เงินสด</span>
+                </div>
+            </div>
+            
+            <div class="promptpay-section">
+                <div class="qr-code">
+                    <div class="qr-placeholder">
+                        <i class="fas fa-qrcode"></i>
+                        <p>QR Code พร้อมเพย์</p>
+                    </div>
+                    <p class="promptpay-number">หมายเลขพร้อมเพย์: 081-234-5678</p>
+                    <p class="payment-amount">จำนวนเงิน: <strong>฿${orderData.total}</strong></p>
+                </div>
+                
+                <div class="payment-instructions">
+                    <h5>วิธีการชำระเงิน:</h5>
+                    <ol>
+                        <li>สแกน QR Code หรือโอนไปที่เบอร์ 081-234-5678</li>
+                        <li>โอนจำนวน ฿${orderData.total}</li>
+                        <li>ส่งสลิปให้ทางร้านผ่าน LINE: @kruakhunying</li>
+                        <li>รอรับอาหารภายใน 15-20 นาที</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <div class="summary-actions">
+                <button class="btn-primary" onclick="sendToLine()">
+                    <i class="fab fa-line"></i> ส่งคำสั่งซื้อไปที่ LINE
+                </button>
+                <button class="btn-secondary" onclick="finishOrder()">
+                    เสร็จสิ้น
+                </button>
+            </div>
+        </div>
+    `;
+    
+    modal.classList.add('active');
+}
+
+// Close order summary
+function closeOrderSummary() {
+    document.getElementById('orderSummaryModal').classList.remove('active');
+}
+
+// Send to LINE
+function sendToLine() {
+    const lineMessage = generateLineMessage(window.currentOrder);
+    // In production, would open LINE app with pre-filled message
+    window.open('https://line.me/R/ti/p/@kruakhunying', '_blank');
+    showNotification('กรุณาส่งรายละเอียดคำสั่งซื้อและสลิปโอนเงินใน LINE');
+}
+
+// Finish order
+function finishOrder() {
+    cart = [];
+    updateCartUI();
+    closeOrderSummary();
+    showNotification('ขอบคุณที่ใช้บริการ ครัวคุณหญิง!');
 }
