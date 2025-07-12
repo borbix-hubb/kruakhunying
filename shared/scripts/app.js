@@ -1,11 +1,11 @@
 // Menu Data
 const menuData = [
     // Rice dishes
-    { id: 1, name: "ข้าวผัดกุ้ง", category: "rice", price: 50, emoji: "🍤", description: "ข้าวผัดกุ้งสด หอมกระเทียม" },
-    { id: 2, name: "ข้าวผัดหมู", category: "rice", price: 45, emoji: "🥓", description: "ข้าวผัดหมูนุ่ม ใส่ไข่ดาว" },
-    { id: 3, name: "ข้าวผัดไก่", category: "rice", price: 45, emoji: "🍗", description: "ข้าวผัดไก่ หอมพริกไทย" },
-    { id: 4, name: "ข้าวผัดปู", category: "rice", price: 55, emoji: "🦀", description: "ข้าวผัดปู เนื้อปูแน่นๆ" },
-    { id: 5, name: "ข้าวผัดผัก", category: "rice", price: 40, emoji: "🥦", description: "ข้าวผัดผักรวม สำหรับมังสวิรัติ" },
+    { id: 1, name: "ข้าวผัดกุ้ง", category: "rice", price: 50, emoji: "🍤", description: "ข้าวผัดกุ้งสด หอมกระเทียม พริกไทย", hot: true },
+    { id: 2, name: "ข้าวผัดหมู", category: "rice", price: 45, emoji: "🥓", description: "ข้าวผัดหมูนุ่ม ใส่ไข่ดาว อร่อยมาก", popular: true },
+    { id: 3, name: "ข้าวผัดไก่", category: "rice", price: 45, emoji: "🍗", description: "ข้าวผัดไก่ หอมพริกไทย กลมกล่อม" },
+    { id: 4, name: "ข้าวผัดปู", category: "rice", price: 55, emoji: "🦀", description: "ข้าวผัดปู เนื้อปูแน่นๆ หอมมัน", recommended: true },
+    { id: 5, name: "ข้าวผัดผัก", category: "rice", price: 40, emoji: "🥦", description: "ข้าวผัดผักรวม สำหรับมังสวิรัติ สุขภาพดี" },
     
     // Noodle dishes
     { id: 6, name: "ผัดไทยกุ้งสด", category: "noodle", price: 45, emoji: "🍜", description: "ผัดไทยกุ้งสด รสชาติต้นตำรับ" },
@@ -69,8 +69,16 @@ function createMenuItemElement(item) {
     div.className = 'menu-item';
     div.onclick = () => showItemDetail(item);
     
+    const badges = [];
+    if (item.popular) badges.push('<span class="badge badge-popular">ยอดนิยม</span>');
+    if (item.recommended) badges.push('<span class="badge badge-recommended">แนะนำ</span>');
+    if (item.hot) badges.push('<span class="badge badge-hot">🌶️ เผ็ด</span>');
+    
     div.innerHTML = `
-        <div class="menu-item-image">${item.emoji}</div>
+        <div class="menu-item-image">
+            ${item.emoji}
+            ${badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : ''}
+        </div>
         <div class="menu-item-info">
             <h3 class="menu-item-name">${item.name}</h3>
             <p class="menu-item-description">${item.description}</p>
