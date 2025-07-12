@@ -761,6 +761,20 @@ body {
     margin-bottom: 1.5rem;
 }
 
+.cash-section {
+    background: var(--light-color);
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 1.5rem;
+    text-align: center;
+}
+
+.cash-info h5 {
+    color: var(--dark-color);
+    margin-bottom: 1rem;
+    font-size: 1.2rem;
+}
+
 .qr-code {
     text-align: center;
     margin-bottom: 1.5rem;

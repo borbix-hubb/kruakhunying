@@ -375,17 +375,17 @@ function showOrderSummary(orderData) {
         <div class="payment-section">
             <h4>ชำระเงิน</h4>
             <div class="payment-methods">
-                <div class="payment-method active">
+                <div class="payment-method active" onclick="selectPaymentMethod('promptpay')">
                     <i class="fas fa-qrcode"></i>
                     <span>พร้อมเพย์</span>
                 </div>
-                <div class="payment-method">
+                <div class="payment-method" onclick="selectPaymentMethod('cash')">
                     <i class="fas fa-money-bill-wave"></i>
                     <span>เงินสด</span>
                 </div>
             </div>
             
-            <div class="promptpay-section">
+            <div id="promptpaySection" class="promptpay-section">
                 <div class="qr-code">
                     <div class="qr-placeholder">
                         <i class="fas fa-qrcode"></i>
@@ -406,12 +406,18 @@ function showOrderSummary(orderData) {
                 </div>
             </div>
             
+            <div id="cashSection" class="cash-section" style="display: none;">
+                <div class="cash-info">
+                    <i class="fas fa-money-bill-wave" style="font-size: 3rem; color: var(--primary-color); margin-bottom: 1rem;"></i>
+                    <h5>ชำระเงินสดเมื่อรับอาหาร</h5>
+                    <p>จำนวนเงิน: <strong>฿${orderData.total}</strong></p>
+                    <p style="color: #666; margin-top: 1rem;">กรุณาเตรียมเงินให้พอดี</p>
+                </div>
+            </div>
+            
             <div class="summary-actions">
-                <button class="btn-primary" onclick="sendToLine()">
-                    <i class="fab fa-line"></i> ส่งคำสั่งซื้อไปที่ LINE
-                </button>
-                <button class="btn-secondary" onclick="finishOrder()">
-                    เสร็จสิ้น
+                <button class="btn-primary" onclick="finishOrder()">
+                    <i class="fas fa-check"></i> เสร็จสิ้น
                 </button>
             </div>
         </div>
@@ -433,10 +439,26 @@ function sendToLine() {
     showNotification('กรุณาส่งรายละเอียดคำสั่งซื้อและสลิปโอนเงินใน LINE');
 }
 
+// Select payment method
+function selectPaymentMethod(method) {
+    const methods = document.querySelectorAll('.payment-method');
+    methods.forEach(m => m.classList.remove('active'));
+    
+    if (method === 'promptpay') {
+        methods[0].classList.add('active');
+        document.getElementById('promptpaySection').style.display = 'block';
+        document.getElementById('cashSection').style.display = 'none';
+    } else {
+        methods[1].classList.add('active');
+        document.getElementById('promptpaySection').style.display = 'none';
+        document.getElementById('cashSection').style.display = 'block';
+    }
+}
+
 // Finish order
 function finishOrder() {
     cart = [];
     updateCartUI();
     closeOrderSummary();
-    showNotification('ขอบคุณที่ใช้บริการ ครัวคุณหญิง!');
+    showNotification('ขอบคุณที่ใช้บริการ ครัวคุณหญิง! คำสั่งซื้อถูกส่งไปยังร้านแล้ว');
 }
