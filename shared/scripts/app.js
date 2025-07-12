@@ -219,7 +219,6 @@ function createMenuItemElement(item) {
     
     div.innerHTML = `
         ${badges.length > 0 ? `<div class="badges">${badges.join('')}</div>` : ''}
-        <div class="menu-item-emoji">${item.emoji}</div>
         <div class="menu-item-info">
             <h3 class="menu-item-name">${item.name}</h3>
             <p class="menu-item-description">${item.description}</p>
@@ -266,19 +265,13 @@ function showItemOptions(itemId) {
     const item = menuData.find(i => i.id === itemId);
     if (!item) return;
     
-    // If only one option, add directly to cart
-    if (item.options.length === 1) {
-        addToCart(itemId, item.options[0].name, item.options[0].price);
-        return;
-    }
-    
-    // Create modal for multiple options
+    // Create modal for options (always show even for single option to include note)
     const modal = document.createElement('div');
     modal.className = 'modal active';
     modal.id = 'itemOptionsModal';
     
     const optionsHTML = item.options.map(option => `
-        <button class="option-btn" onclick="selectOption(${itemId}, '${option.name}', ${option.price})">
+        <button class="option-btn" onclick="selectOptionWithNote(${itemId}, '${option.name}', ${option.price})">
             <span class="option-name">${option.name}</span>
             <span class="option-price">฿${option.price}</span>
         </button>
@@ -293,9 +286,14 @@ function showItemOptions(itemId) {
                 </button>
             </div>
             <div class="modal-body">
-                <p class="options-title">เลือกประเภทเนื้อสัตว์:</p>
+                <p class="item-detail-description" style="margin-bottom: 1rem; color: #666;">${item.description || ''}</p>
+                ${item.options.length > 1 ? '<p class="options-title">เลือกประเภทเนื้อสัตว์:</p>' : ''}
                 <div class="options-grid">
                     ${optionsHTML}
+                </div>
+                <div class="form-group" style="margin-top: 1.5rem;">
+                    <label>หมายเหตุ</label>
+                    <input type="text" id="itemNote" placeholder="เช่น ไม่ใส่ผัก, เผ็ดน้อย, ไม่เผ็ด" style="width: 100%; padding: 0.75rem; border: 2px solid #e0e0e0; border-radius: 10px; font-size: 1rem;">
                 </div>
             </div>
         </div>
@@ -307,6 +305,13 @@ function showItemOptions(itemId) {
 // Select option and add to cart
 function selectOption(itemId, optionName, price) {
     addToCart(itemId, optionName, price);
+    closeItemOptionsModal();
+}
+
+// Select option with note and add to cart
+function selectOptionWithNote(itemId, optionName, price) {
+    const note = document.getElementById('itemNote').value.trim();
+    addToCart(itemId, optionName, price, note);
     closeItemOptionsModal();
 }
 

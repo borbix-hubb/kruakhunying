@@ -111,6 +111,8 @@ async function loadOrdersFromSupabase() {
                     quantity,
                     price,
                     subtotal,
+                    note,
+                    selected_option,
                     menu_items (
                         name
                     )
@@ -150,7 +152,9 @@ async function loadOrdersFromSupabase() {
             items: order.order_items?.map(item => ({
                 name: item.menu_items?.name || 'ไม่ระบุ',
                 quantity: item.quantity,
-                price: item.price
+                price: item.price,
+                note: item.note || '',
+                option: item.selected_option || ''
             })) || [],
             total: order.total_amount,
             status: order.status || 'pending',
@@ -219,7 +223,13 @@ function loadOrders(filter = 'all') {
 
 function createOrderRow(order) {
     const tr = document.createElement('tr');
-    const itemsList = order.items.map(item => `${item.name} x${item.quantity}`).join(', ');
+    const itemsList = order.items.map(item => {
+        let itemText = `${item.name}`;
+        if (item.option) itemText += ` (${item.option})`;
+        itemText += ` x${item.quantity}`;
+        if (item.note) itemText += ` - ${item.note}`;
+        return itemText;
+    }).join(', ');
     const paymentMethod = order.paymentMethod || 'เงินสด';
     
     tr.innerHTML = `
@@ -270,6 +280,17 @@ function getPaymentMethodText(method) {
     return methodMap[method] || method;
 }
 
+function getDormName(dorm) {
+    const dormMap = {
+        'building-1': 'ตึก 1',
+        'building-a': 'ตึก A',
+        'building-b': 'ตึก B',
+        'building-3': 'ตึก 3',
+        'other': 'อื่นๆ'
+    };
+    return dormMap[dorm] || dorm || 'ไม่ระบุ';
+}
+
 // View order detail
 function viewOrderDetail(orderId) {
     const order = orders.find(o => o.id === orderId);
@@ -292,7 +313,11 @@ function viewOrderDetail(orderId) {
                 <table class="detail-table">
                     ${order.items.map(item => `
                         <tr>
-                            <td>${item.name}</td>
+                            <td>
+                                ${item.name}
+                                ${item.option ? `<br><small style="color: #666;">(${item.option})</small>` : ''}
+                                ${item.note ? `<br><small style="color: #999;">หมายเหตุ: ${item.note}</small>` : ''}
+                            </td>
                             <td>x${item.quantity}</td>
                             <td>฿${item.price * item.quantity}</td>
                         </tr>
