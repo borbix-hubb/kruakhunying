@@ -459,7 +459,7 @@ body {
 
 /* Order Form */
 #orderForm {
-    padding: 2rem;
+    padding: 2.5rem;
 }
 
 .form-group {
@@ -514,7 +514,7 @@ body {
 }
 
 .item-detail {
-    padding: 2rem;
+    padding: 2.5rem;
 }
 
 .item-detail-image {
@@ -668,7 +668,7 @@ body {
 }
 
 .order-details {
-    padding: 2rem;
+    padding: 2.5rem;
     border-bottom: 1px solid #eee;
 }
 
@@ -718,7 +718,7 @@ body {
 }
 
 .payment-section {
-    padding: 2rem;
+    padding: 2.5rem;
 }
 
 .payment-section h4 {
@@ -813,7 +813,7 @@ body {
 .summary-actions {
     display: flex;
     gap: 1rem;
-    padding: 0 2rem 2rem;
+    padding: 0 2.5rem 2.5rem;
 }
 
 .summary-actions button {
