@@ -284,13 +284,131 @@ function addMenuItem(event) {
 }
 
 // Reports
+let salesChart = null;
+
 function loadReports() {
+    // Generate sample data for the last 7 days
+    const labels = [];
+    const salesData = [];
+    const ordersData = [];
+    
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        labels.push(date.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric' }));
+        
+        // Generate random sales data
+        salesData.push(Math.floor(Math.random() * 3000) + 1000);
+        ordersData.push(Math.floor(Math.random() * 30) + 10);
+    }
+    
     // Load sales chart
     const ctx = document.getElementById('salesChart');
     if (ctx) {
-        // In real app, would use Chart.js
-        ctx.innerHTML = '<p style="text-align: center; padding: 2rem;">กราฟยอดขายจะแสดงที่นี่</p>';
+        // Destroy existing chart if any
+        if (salesChart) {
+            salesChart.destroy();
+        }
+        
+        salesChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'ยอดขาย (บาท)',
+                    data: salesData,
+                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y'
+                }, {
+                    label: 'จำนวนออเดอร์',
+                    data: ordersData,
+                    borderColor: '#FFD166',
+                    backgroundColor: 'rgba(255, 209, 102, 0.1)',
+                    tension: 0.4,
+                    fill: true,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false,
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'ยอดขายและจำนวนออเดอร์ 7 วันย้อนหลัง',
+                        font: {
+                            size: 16,
+                            family: 'Prompt'
+                        }
+                    },
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                family: 'Prompt'
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'ยอดขาย (บาท)',
+                            font: {
+                                family: 'Prompt'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Prompt'
+                            }
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'จำนวนออเดอร์',
+                            font: {
+                                family: 'Prompt'
+                            }
+                        },
+                        ticks: {
+                            font: {
+                                family: 'Prompt'
+                            }
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    },
+                    x: {
+                        ticks: {
+                            font: {
+                                family: 'Prompt'
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
+    
+    // Load category chart
+    loadCategoryChart();
     
     // Load popular items
     const popularList = document.querySelector('.popular-list');
@@ -308,7 +426,108 @@ function loadReports() {
                 <span>3. กะเพราหมูสับ</span>
                 <span>95 จาน</span>
             </div>
+            <div class="popular-item">
+                <span>4. ข้าวผัดหมู</span>
+                <span>87 จาน</span>
+            </div>
+            <div class="popular-item">
+                <span>5. ชาเย็น</span>
+                <span>156 แก้ว</span>
+            </div>
         `;
+    }
+}
+
+// Category sales chart
+let categoryChart = null;
+
+function loadCategoryChart() {
+    const categoryCanvas = document.createElement('canvas');
+    categoryCanvas.id = 'categoryChart';
+    categoryCanvas.style.maxHeight = '300px';
+    
+    const chartContainer = document.querySelector('.chart-container');
+    if (chartContainer && !document.getElementById('categoryChart')) {
+        chartContainer.insertAdjacentHTML('afterend', 
+            '<div class="chart-container" style="margin-top: 2rem;"><canvas id="categoryChart"></canvas></div>'
+        );
+    }
+    
+    const ctx = document.getElementById('categoryChart');
+    if (ctx) {
+        if (categoryChart) {
+            categoryChart.destroy();
+        }
+        
+        categoryChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['ข้าว', 'เส้น', 'กับข้าว', 'เครื่องดื่ม'],
+                datasets: [{
+                    data: [45, 25, 20, 10],
+                    backgroundColor: [
+                        '#FF6B35',
+                        '#FF8C42',
+                        '#FFD166',
+                        '#FFC947'
+                    ],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'ยอดขายแยกตามหมวดหมู่',
+                        font: {
+                            size: 16,
+                            family: 'Prompt'
+                        }
+                    },
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            font: {
+                                family: 'Prompt',
+                                size: 14
+                            },
+                            generateLabels: function(chart) {
+                                const data = chart.data;
+                                if (data.labels.length && data.datasets.length) {
+                                    return data.labels.map((label, i) => {
+                                        const value = data.datasets[0].data[i];
+                                        return {
+                                            text: `${label} (${value}%)`,
+                                            fillStyle: data.datasets[0].backgroundColor[i],
+                                            strokeStyle: data.datasets[0].borderColor,
+                                            lineWidth: data.datasets[0].borderWidth,
+                                            hidden: false,
+                                            index: i
+                                        };
+                                    });
+                                }
+                                return [];
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                label += context.parsed + '%';
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 }
 

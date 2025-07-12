@@ -403,11 +403,31 @@ body {
     color: var(--primary-color);
 }
 
+.summary-change {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 0.5rem;
+}
+
+.summary-change.positive {
+    color: #4CAF50;
+}
+
+.summary-change.negative {
+    color: #F44336;
+}
+
 .chart-container {
     background: var(--light-color);
     padding: 2rem;
-    border-radius: 10px;
+    border-radius: 15px;
     margin-bottom: 2rem;
+    height: 400px;
+    position: relative;
+}
+
+.chart-container canvas {
+    max-height: 100%;
 }
 
 /* Buttons */
