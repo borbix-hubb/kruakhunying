@@ -192,9 +192,20 @@ function displayMenu() {
     const menuContainer = document.getElementById('menuContainer');
     menuContainer.innerHTML = '';
     
-    const filteredMenu = currentCategory === 'all' 
-        ? menuData 
-        : menuData.filter(item => item.category === currentCategory);
+    let filteredMenu;
+    if (currentCategory === 'all') {
+        filteredMenu = menuData;
+    } else {
+        filteredMenu = menuData.filter(item => {
+            // Map drinks tab to Sipit category items
+            if (currentCategory === 'drinks') {
+                return item.category === 'drinks';
+            }
+            return item.category === currentCategory;
+        });
+    }
+    
+    console.log('Filtered menu for category', currentCategory, ':', filteredMenu);
     
     filteredMenu.forEach(item => {
         const menuItemEl = createMenuItemElement(item);
