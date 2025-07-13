@@ -241,7 +241,7 @@ function createOrderRow(order) {
         <td>${order.customer.name}</td>
         <td>${itemsList}</td>
         <td>฿${order.total}</td>
-        <td>${order.deliveryMethod === 'pickup' ? '<span style="color: #FF6B35; font-weight: bold;">มารับเอง</span>' : `${getDormName(order.customer.dorm)} ${order.customer.room}`}</td>
+        <td>${order.deliveryMethod === 'pickup' ? '<span style="color: #FF6B35; font-weight: bold;">มารับเอง</span>' : `<span style="color: #4169E1; font-weight: bold;">ส่งที่ห้อง</span> ${getDormName(order.customer.dorm)} ${order.customer.room}`}</td>
         <td>${getPaymentMethodText(paymentMethod)}</td>
         <td><span class="order-status status-${order.status}">${getStatusText(order.status)}</span></td>
         <td>
@@ -309,7 +309,7 @@ function viewOrderDetail(orderId) {
                 <h3>ข้อมูลลูกค้า</h3>
                 <p><strong>ชื่อ:</strong> ${order.customer.name}</p>
                 <p><strong>โทร:</strong> ${order.customer.phone}</p>
-                <p><strong>ที่อยู่:</strong> ${order.customer.dorm} ห้อง ${order.customer.room}</p>
+                <p><strong>การจัดส่ง:</strong> ${order.deliveryMethod === 'pickup' ? '<span style="color: #FF6B35; font-weight: bold;">มารับเอง</span>' : `<span style="color: #4169E1; font-weight: bold;">ส่งที่ห้อง</span> ${getDormName(order.customer.dorm)} ${order.customer.room}`}</p>
             </div>
             
             <div class="detail-section">
