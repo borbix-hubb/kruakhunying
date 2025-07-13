@@ -90,6 +90,7 @@
             border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
+            font-family: 'Prompt', sans-serif;
         }
         
         .btn-add-option:hover {
@@ -104,6 +105,23 @@
             border-radius: 3px;
             cursor: pointer;
             font-size: 12px;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .btn-edit-price {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Prompt', sans-serif;
+            margin-right: 5px;
+        }
+        
+        .btn-edit-price:hover {
+            background: #1976D2;
         }
         
         .btn-delete-option:hover {
@@ -155,6 +173,7 @@
             border: none;
             border-radius: 4px;
             cursor: pointer;
+            font-family: 'Prompt', sans-serif;
         }
         
         .btn-save {
@@ -165,6 +184,11 @@
         .btn-cancel {
             background: #ccc;
             color: #333;
+        }
+        
+        /* Ensure all buttons use Prompt font */
+        button {
+            font-family: 'Prompt', sans-serif;
         }
         
         .category-section {
@@ -388,7 +412,10 @@
                                         <span class="option-price">
                                             ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
                                         </span>
-                                        <button class="btn-delete-option" onclick="deleteOption(${opt.id})">
+                                        <button class="btn-edit-price" onclick="editOptionPrice(${opt.id}, ${opt.price_adjustment || 0}, '${opt.option_name.replace(/'/g, "\\'")}'${item.price})" title="แก้ไขราคา">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-delete-option" onclick="deleteOption(${opt.id})" title="ลบ">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </div>
@@ -460,6 +487,41 @@
             }
         }
 
+        // Edit option price
+        async function editOptionPrice(optionId, currentAdjustment, optionName, basePrice) {
+            const newAdjustment = prompt(`แก้ไขราคาเพิ่มสำหรับ "${optionName}"\nราคาปัจจุบัน: ฿${basePrice + currentAdjustment}\nใส่ราคาเพิ่มเติม (0 = ราคาปกติ):`, currentAdjustment.toString());
+            
+            if (newAdjustment === null) return;
+            
+            const adjustment = parseInt(newAdjustment);
+            if (isNaN(adjustment) || adjustment < 0) {
+                alert('กรุณาใส่ตัวเลขที่ถูกต้อง');
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('menu_options')
+                    .update({ price_adjustment: adjustment })
+                    .eq('id', optionId);
+                
+                if (error) throw error;
+                
+                // Update local data
+                const option = menuOptions.find(opt => opt.id === optionId);
+                if (option) {
+                    option.price_adjustment = adjustment;
+                }
+                
+                // Refresh display
+                displayMenuByCategory();
+                
+            } catch (error) {
+                console.error('Error updating option price:', error);
+                alert('เกิดข้อผิดพลาดในการแก้ไขราคา: ' + error.message);
+            }
+        }
+        
         // Delete option
         async function deleteOption(optionId) {
             if (!confirm('ต้องการลบตัวเลือกนี้หรือไม่?')) return;
