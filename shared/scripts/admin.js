@@ -203,7 +203,7 @@ function loadOrders(filter = 'all') {
         // Show empty message
         tbody.innerHTML = `
             <tr>
-                <td colspan="8" style="text-align: center; padding: 40px; color: #999;">
+                <td colspan="9" style="text-align: center; padding: 40px; color: #999;">
                     <i class="fas fa-inbox" style="font-size: 48px; margin-bottom: 10px; display: block;"></i>
                     ไม่มีคำสั่งซื้อ${filter !== 'all' ? 'ในสถานะนี้' : 'ในระบบ'}
                     <br>
@@ -234,15 +234,14 @@ function createOrderRow(order) {
         if (item.note) itemText += ` - ${item.note}`;
         return itemText;
     }).join('<br>');
-    const paymentMethod = getPaymentMethodText(order.paymentMethod);
-    
     tr.innerHTML = `
         <td>${order.id}</td>
         <td>${order.customer.name}</td>
         <td>${itemsList}</td>
         <td>฿${order.total}</td>
-        <td>${order.deliveryMethod === 'pickup' ? '<span style="color: #FF6B35; font-weight: bold;">มารับเอง</span>' : `<span style="color: #4169E1; font-weight: bold;">ส่งที่ห้อง</span> ${getDormName(order.customer.dorm)} ${order.customer.room}`}</td>
-        <td>${getPaymentMethodText(paymentMethod)}</td>
+        <td>${getDormName(order.customer.dorm)} ${order.customer.room}</td>
+        <td>${order.deliveryMethod === 'pickup' ? '<span style="color: #FF6B35; font-weight: bold;">มารับเอง</span>' : '<span style="color: #4169E1; font-weight: bold;">ส่งที่ห้อง</span>'}</td>
+        <td>${getPaymentMethodText(order.paymentMethod)}</td>
         <td><span class="order-status status-${order.status}">${getStatusText(order.status)}</span></td>
         <td>
             <div class="action-buttons">
