@@ -413,7 +413,7 @@
                                         <span class="option-price">
                                             ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
                                         </span>
-                                        <button class="btn-edit-price" onclick="editOptionPrice(${opt.id}, ${opt.price_adjustment || 0}, '${opt.option_name.replace(/'/g, "\\'")}'", ${item.price})" title="แก้ไขราคา">
+                                        <button class="btn-edit-price" onclick="editOptionPrice(${opt.id}, ${opt.price_adjustment || 0}, '${opt.option_name.replace(/'/g, "\\'")}', ${item.price})" title="แก้ไขราคา">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn-delete-option" onclick="deleteOption(${opt.id})" title="ลบ">
