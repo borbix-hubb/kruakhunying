@@ -219,7 +219,7 @@
                                 <div class="option-item">
                                     <span>${opt.option_name}</span>
                                     <span class="option-price">
-                                        ${opt.price_adjustment > 0 ? `+฿${opt.price_adjustment}` : 'ราคาปกติ'}
+                                        ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
                                     </span>
                                 </div>
                             `).join('')}

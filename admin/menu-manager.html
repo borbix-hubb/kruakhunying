@@ -357,7 +357,7 @@
                                 <div class="option-item">
                                     <span>${opt.option_name}</span>
                                     <span class="option-price">
-                                        ${opt.price_adjustment > 0 ? `+฿${opt.price_adjustment}` : 'ราคาปกติ'}
+                                        ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
                                     </span>
                                     <button class="btn-delete-option" onclick="deleteOption(${opt.id})">
                                         <i class="fas fa-trash"></i>
@@ -374,7 +374,7 @@
                     <div class="add-option-form" id="optionForm${item.id}">
                         <div class="form-row">
                             <input type="text" id="optionName${item.id}" placeholder="ชื่อเนื้อสัตว์ (เช่น หมูกรอบ)">
-                            <input type="number" id="optionPrice${item.id}" placeholder="ราคาเพิ่ม (0 = ราคาปกติ)" min="0" value="0">
+                            <input type="number" id="optionPrice${item.id}" placeholder="ราคาเพิ่มเติม" min="0" value="0">
                         </div>
                         <div class="form-row">
                             <button class="btn-save" onclick="addOption(${item.id})">บันทึก</button>
