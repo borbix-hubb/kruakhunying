@@ -123,7 +123,7 @@ function getCategorySlug(categoryName) {
         'ประเภทตำ': 'papaya',
         'เมนูทานเล่น': 'snack',
         'เมนูเพิ่มเติม': 'extra',
-        'ร้านน้ำ Sipit': 'drinks'
+        'ร้านน้ำ Sipit': 'sipit-drinks'  // แก้ไขให้ตรงกับ database slug
     };
     return categoryMap[categoryName] || 'rice';
 }
@@ -197,9 +197,9 @@ function displayMenu() {
         filteredMenu = menuData;
     } else {
         filteredMenu = menuData.filter(item => {
-            // Map drinks tab to Sipit category items
+            // Map drinks tab to sipit-drinks category
             if (currentCategory === 'drinks') {
-                return item.category === 'drinks';
+                return item.category === 'sipit-drinks';
             }
             return item.category === currentCategory;
         });
