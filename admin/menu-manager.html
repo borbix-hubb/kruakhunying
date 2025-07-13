@@ -191,6 +191,135 @@
             font-family: 'Prompt', sans-serif;
         }
         
+        /* Modern inline edit styles */
+        .inline-edit-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .inline-edit-input {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            background: white;
+            border: 2px solid #FF6B35;
+            border-radius: 25px;
+            padding: 8px 16px;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+            width: 120px;
+            font-family: 'Prompt', sans-serif;
+            font-size: 14px;
+            text-align: center;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50%) translateX(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(-50%) translateX(0);
+            }
+        }
+        
+        .inline-edit-input:focus {
+            outline: none;
+            border-color: #FF8C42;
+            box-shadow: 0 4px 25px rgba(255, 107, 53, 0.4);
+        }
+        
+        .inline-edit-buttons {
+            display: none;
+            position: absolute;
+            right: -10px;
+            top: 100%;
+            margin-top: 5px;
+            z-index: 11;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .inline-edit-btn {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .inline-edit-save {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .inline-edit-save:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .inline-edit-cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .inline-edit-cancel:hover {
+            background: #e0e0e0;
+        }
+        
+        .option-price.editing {
+            opacity: 0.5;
+        }
+        
+        /* Tooltip style for showing current price */
+        .price-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-bottom: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .price-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #333;
+        }
+        
+        .inline-edit-wrapper:hover .price-tooltip {
+            opacity: 1;
+        }
+        
         .category-section {
             margin-bottom: 40px;
         }
@@ -303,6 +432,18 @@
         document.addEventListener('DOMContentLoaded', async () => {
             await checkAdminAuth();
             await loadMenuData();
+            
+            // Click outside to close inline edit
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.inline-edit-wrapper') && !e.target.closest('.btn-edit-price')) {
+                    document.querySelectorAll('.inline-edit-input').forEach(input => {
+                        if (input.style.display === 'block') {
+                            const optionId = input.dataset.optionId;
+                            cancelInlineEdit(parseInt(optionId));
+                        }
+                    });
+                }
+            });
         });
 
         // Load all menu data
@@ -410,10 +551,28 @@
                                 <div class="option-item">
                                     <span style="flex: 1;">${opt.option_name}</span>
                                     <div class="option-controls">
-                                        <span class="option-price">
-                                            ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
-                                        </span>
-                                        <button class="btn-edit-price" onclick="editOptionPrice(${opt.id}, ${opt.price_adjustment || 0}, '${opt.option_name.replace(/'/g, "\\'")}', ${item.price})" title="แก้ไขราคา">
+                                        <div class="inline-edit-wrapper">
+                                            <span class="option-price" id="price-${opt.id}">
+                                                ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
+                                            </span>
+                                            <input type="number" 
+                                                   class="inline-edit-input" 
+                                                   id="edit-${opt.id}" 
+                                                   value="${opt.price_adjustment || 0}"
+                                                   data-option-id="${opt.id}"
+                                                   data-base-price="${item.price}"
+                                                   onkeydown="handleEditKeydown(event, ${opt.id})">
+                                            <div class="inline-edit-buttons" id="buttons-${opt.id}">
+                                                <button class="inline-edit-btn inline-edit-save" onclick="saveInlineEdit(${opt.id})">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="inline-edit-btn inline-edit-cancel" onclick="cancelInlineEdit(${opt.id})">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            <div class="price-tooltip">คลิกเพื่อแก้ไข</div>
+                                        </div>
+                                        <button class="btn-edit-price" onclick="startInlineEdit(${opt.id})" title="แก้ไขราคา">
                                             <i class="fas fa-edit"></i>
                                         </button>
                                         <button class="btn-delete-option" onclick="deleteOption(${opt.id})" title="ลบ">
@@ -488,15 +647,47 @@
             }
         }
 
-        // Edit option price
-        async function editOptionPrice(optionId, currentAdjustment, optionName, basePrice) {
-            const newAdjustment = prompt(`แก้ไขราคาเพิ่มสำหรับ "${optionName}"\nราคาปัจจุบัน: ฿${basePrice + currentAdjustment}\nใส่ราคาเพิ่มเติม (0 = ราคาปกติ):`, currentAdjustment.toString());
+        // Start inline edit
+        function startInlineEdit(optionId) {
+            const input = document.getElementById(`edit-${optionId}`);
+            const buttons = document.getElementById(`buttons-${optionId}`);
+            const priceSpan = document.getElementById(`price-${optionId}`);
             
-            if (newAdjustment === null) return;
+            // Hide all other edits
+            document.querySelectorAll('.inline-edit-input').forEach(inp => {
+                if (inp.id !== `edit-${optionId}`) {
+                    inp.style.display = 'none';
+                    document.getElementById(inp.id.replace('edit-', 'buttons-')).style.display = 'none';
+                    document.getElementById(inp.id.replace('edit-', 'price-')).classList.remove('editing');
+                }
+            });
             
-            const adjustment = parseInt(newAdjustment);
-            if (isNaN(adjustment) || adjustment < 0) {
-                alert('กรุณาใส่ตัวเลขที่ถูกต้อง');
+            // Show this edit
+            input.style.display = 'block';
+            buttons.style.display = 'block';
+            priceSpan.classList.add('editing');
+            input.focus();
+            input.select();
+        }
+        
+        // Handle keydown in edit input
+        function handleEditKeydown(event, optionId) {
+            if (event.key === 'Enter') {
+                saveInlineEdit(optionId);
+            } else if (event.key === 'Escape') {
+                cancelInlineEdit(optionId);
+            }
+        }
+        
+        // Save inline edit
+        async function saveInlineEdit(optionId) {
+            const input = document.getElementById(`edit-${optionId}`);
+            const adjustment = parseInt(input.value) || 0;
+            
+            if (adjustment < 0) {
+                // Animate error
+                input.style.animation = 'shake 0.3s';
+                setTimeout(() => input.style.animation = '', 300);
                 return;
             }
             
@@ -514,14 +705,57 @@
                     option.price_adjustment = adjustment;
                 }
                 
-                // Refresh display
-                displayMenuByCategory();
+                // Update price display
+                const basePrice = parseInt(input.dataset.basePrice);
+                const priceSpan = document.getElementById(`price-${optionId}`);
+                priceSpan.textContent = `฿${basePrice + adjustment}`;
+                
+                // Animate success
+                priceSpan.style.animation = 'pulse 0.5s';
+                setTimeout(() => {
+                    priceSpan.style.animation = '';
+                    cancelInlineEdit(optionId);
+                }, 500);
                 
             } catch (error) {
                 console.error('Error updating option price:', error);
-                alert('เกิดข้อผิดพลาดในการแก้ไขราคา: ' + error.message);
+                input.style.animation = 'shake 0.3s';
+                setTimeout(() => input.style.animation = '', 300);
             }
         }
+        
+        // Cancel inline edit
+        function cancelInlineEdit(optionId) {
+            const input = document.getElementById(`edit-${optionId}`);
+            const buttons = document.getElementById(`buttons-${optionId}`);
+            const priceSpan = document.getElementById(`price-${optionId}`);
+            
+            input.style.display = 'none';
+            buttons.style.display = 'none';
+            priceSpan.classList.remove('editing');
+            
+            // Reset value
+            const option = menuOptions.find(opt => opt.id === optionId);
+            if (option) {
+                input.value = option.price_adjustment || 0;
+            }
+        }
+        
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
         
         // Delete option
         async function deleteOption(optionId) {

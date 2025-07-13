@@ -122,7 +122,8 @@ function getCategorySlug(categoryName) {
         'ประเภทน้ำตก': 'grill',
         'ประเภทตำ': 'papaya',
         'เมนูทานเล่น': 'snack',
-        'เมนูเพิ่มเติม': 'extra'
+        'เมนูเพิ่มเติม': 'extra',
+        'ร้านน้ำ Sipit': 'drinks'
     };
     return categoryMap[categoryName] || 'rice';
 }
@@ -139,7 +140,8 @@ function getMenuEmoji(categoryId, name) {
         6: '🍖', // namtok
         7: '🥒', // somtam
         8: '🍟', // snacks
-        9: '➕'  // extras
+        9: '➕', // extras
+        10: '☕' // drinks (Sipit)
     };
     
     // Special emojis for specific items
@@ -148,9 +150,14 @@ function getMenuEmoji(categoryId, name) {
     if (name.includes('ไก่')) return '🍗';
     if (name.includes('ปู')) return '🦀';
     if (name.includes('ผัก')) return '🥦';
-    if (name.includes('ชา')) return '🧋';
-    if (name.includes('กาแฟ')) return '☕';
-    if (name.includes('ส้ม')) return '🍊';
+    if (name.includes('ชา') && !name.includes('อเมริกาโน่')) return '🧋';
+    if (name.includes('กาแฟ') || name.includes('อเมริกาโน่') || name.includes('คาปู') || name.includes('ลาเต้') || name.includes('มอค')) return '☕';
+    if (name.includes('โซดา')) return '🥤';
+    if (name.includes('สมูทตี้')) return '🧋';
+    if (name.includes('โกโก้') || name.includes('ช็อคโกแลต')) return '🍾';
+    if (name.includes('นม')) return '🥛';
+    if (name.includes('โอวัลติน')) return '🍼';
+    if (name.includes('ส้ม') && !name.includes('ชา')) return '🍊';
     
     return categoryEmojiMap[categoryId] || '🍽️';
 }
