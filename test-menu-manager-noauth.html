@@ -216,9 +216,9 @@
                         <h4>ตัวเลือกเพิ่มเติม:</h4>
                         ${itemOptions.length > 0 ? `
                             ${itemOptions.map(opt => `
-                                <div class="option-item">
-                                    <span>${opt.option_name}</span>
-                                    <span class="option-price">
+                                <div class="option-item" style="display: flex; justify-content: space-between; align-items: center; padding: 10px; background: white; border-radius: 5px; margin-bottom: 5px; border: 1px solid #e0e0e0;">
+                                    <span style="flex: 1;">${opt.option_name}</span>
+                                    <span class="option-price" style="color: #333; font-weight: 600; font-size: 16px; min-width: 60px; text-align: right;">
                                         ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
                                     </span>
                                 </div>
