@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Menu Manager (No Auth) - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="shared/styles/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .debug-info {
+            background: #f0f0f0;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .error-box {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        .success-box {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+            font-size: 18px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <main class="main-content" style="margin-left: 0;">
+            <header class="admin-header">
+                <h1>Test Menu Manager - No Authentication Required</h1>
+            </header>
+
+            <div id="debugInfo" class="debug-info">
+                <h3>Debug Information:</h3>
+                <div id="debugContent">Initializing...</div>
+            </div>
+
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>เมนูอาหาร</h2>
+                    <button class="btn-primary" onclick="reloadData()">
+                        <i class="fas fa-sync"></i> Reload Data
+                    </button>
+                </div>
+
+                <div id="loadingState" class="loading">
+                    <i class="fas fa-spinner fa-spin"></i> Loading menu data...
+                </div>
+
+                <div id="menuCategories"></div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+    <script>
+        let menuItems = [];
+        let menuOptions = [];
+        const debugDiv = document.getElementById('debugContent');
+        const loadingDiv = document.getElementById('loadingState');
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'success' ? 'green' : 'black';
+            debugDiv.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            log('Page loaded, starting initialization...');
+            await loadMenuData();
+        });
+
+        // Load all menu data
+        async function loadMenuData() {
+            try {
+                log('Starting to load menu data...');
+                loadingDiv.style.display = 'block';
+                
+                // Check Supabase connection
+                log('Supabase URL: ' + window.supabaseClient.supabaseUrl);
+                
+                // Load menu items
+                log('Loading menu items...');
+                const { data: items, error: itemsError } = await window.supabaseClient
+                    .from('menu_items')
+                    .select('*, menu_categories(*)')
+                    .order('category_id', { ascending: true })
+                    .order('name', { ascending: true });
+
+                if (itemsError) {
+                    log(`Error loading menu items: ${itemsError.message}`, 'error');
+                    log(`Error details: ${JSON.stringify(itemsError)}`, 'error');
+                    throw itemsError;
+                }
+                
+                menuItems = items || [];
+                log(`Successfully loaded ${menuItems.length} menu items`, 'success');
+
+                // Load menu options - don't fail if table doesn't exist
+                try {
+                    log('Loading menu options...');
+                    const { data: options, error: optionsError } = await window.supabaseClient
+                        .from('menu_options')
+                        .select('*')
+                        .order('menu_item_id', { ascending: true })
+                        .order('option_name', { ascending: true });
+
+                    if (optionsError) {
+                        log(`Warning loading menu options: ${optionsError.message}`, 'error');
+                        menuOptions = [];
+                    } else {
+                        menuOptions = options || [];
+                        log(`Successfully loaded ${menuOptions.length} menu options`, 'success');
+                    }
+                } catch (optError) {
+                    log('Menu options table might not exist: ' + optError.message, 'error');
+                    menuOptions = [];
+                }
+
+                loadingDiv.style.display = 'none';
+                displayMenuByCategory();
+                
+            } catch (error) {
+                loadingDiv.style.display = 'none';
+                log(`Fatal error loading menu data: ${error.message}`, 'error');
+                document.getElementById('menuCategories').innerHTML = 
+                    `<div class="error-box">
+                        <h3>❌ Error Loading Data</h3>
+                        <p>${error.message}</p>
+                        <p>Please check the browser console for more details.</p>
+                    </div>`;
+            }
+        }
+
+        // Display menu grouped by category
+        function displayMenuByCategory() {
+            const categoriesDiv = document.getElementById('menuCategories');
+            categoriesDiv.innerHTML = '';
+
+            log(`Displaying ${menuItems.length} menu items`);
+
+            if (menuItems.length === 0) {
+                categoriesDiv.innerHTML = 
+                    `<div class="error-box">
+                        <h3>❌ ไม่พบข้อมูลเมนู</h3>
+                        <p>กรุณาตรวจสอบ:</p>
+                        <ul>
+                            <li>รัน SQL script เพื่อเพิ่มข้อมูลใน Supabase</li>
+                            <li>ตรวจสอบการเชื่อมต่อ Supabase</li>
+                            <li>ตรวจสอบ RLS policies</li>
+                        </ul>
+                    </div>`;
+                return;
+            }
+
+            // Group menu items by category
+            const categories = {};
+            menuItems.forEach(item => {
+                const categoryName = item.menu_categories?.name || 'อื่นๆ';
+                if (!categories[categoryName]) {
+                    categories[categoryName] = [];
+                }
+                categories[categoryName].push(item);
+            });
+
+            log(`Found ${Object.keys(categories).length} categories`);
+
+            // Display each category
+            Object.entries(categories).forEach(([categoryName, items]) => {
+                const categorySection = document.createElement('div');
+                categorySection.className = 'category-section';
+                
+                categorySection.innerHTML = `
+                    <div class="category-header">
+                        <h2>${categoryName} (${items.length} รายการ)</h2>
+                    </div>
+                    <div class="menu-grid">
+                        ${items.map(item => createMenuCard(item)).join('')}
+                    </div>
+                `;
+                
+                categoriesDiv.appendChild(categorySection);
+            });
+
+            log('Display completed', 'success');
+        }
+
+        // Create menu card HTML
+        function createMenuCard(item) {
+            const itemOptions = menuOptions.filter(opt => opt.menu_item_id === item.id);
+            
+            return `
+                <div class="menu-card">
+                    <h3>${item.name}</h3>
+                    <p class="price">฿${item.price}</p>
+                    ${item.description ? `<p>${item.description}</p>` : ''}
+                    
+                    <div class="menu-options">
+                        <h4>ตัวเลือกเพิ่มเติม:</h4>
+                        ${itemOptions.length > 0 ? `
+                            ${itemOptions.map(opt => `
+                                <div class="option-item">
+                                    <span>${opt.option_name}</span>
+                                    <span class="option-price">
+                                        ${opt.price_adjustment > 0 ? `+฿${opt.price_adjustment}` : 'ราคาปกติ'}
+                                    </span>
+                                </div>
+                            `).join('')}
+                        ` : '<p class="no-options">ยังไม่มีตัวเลือก</p>'}
+                    </div>
+                    
+                    <div style="margin-top: 10px;">
+                        <small>
+                            ID: ${item.id} | 
+                            Available: ${item.is_available ? '✅' : '❌'} | 
+                            Popular: ${item.is_popular ? '⭐' : '-'} | 
+                            Recommended: ${item.is_recommended ? '👍' : '-'}
+                        </small>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Reload data
+        function reloadData() {
+            debugDiv.innerHTML = '';
+            log('Reloading data...');
+            loadMenuData();
+        }
+    </script>
+</body>
+</html>
