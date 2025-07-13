@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Manager UI Preview - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .preview-header {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+        
+        .preview-header h1 {
+            color: #FF6B35;
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .preview-header p {
+            color: #666;
+            font-size: 18px;
+        }
+        
+        /* Admin Layout Preview */
+        .admin-layout {
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        /* Sidebar */
+        .sidebar-preview {
+            background: #2c3e50;
+            padding: 20px 0;
+            min-height: 600px;
+        }
+        
+        .sidebar-preview h3 {
+            color: white;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #34495e;
+            margin-bottom: 20px;
+        }
+        
+        .nav-item {
+            display: block;
+            padding: 15px 20px;
+            color: #ecf0f1;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+        
+        .nav-item:hover {
+            background: #34495e;
+            padding-left: 30px;
+        }
+        
+        .nav-item.active {
+            background: #FF6B35;
+            color: white;
+        }
+        
+        .nav-item i {
+            margin-right: 10px;
+            width: 20px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 30px;
+        }
+        
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .content-header h2 {
+            font-size: 28px;
+            color: #333;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #FF6B35 0%, #F7931E 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,107,53,0.4);
+        }
+        
+        /* Category Tabs */
+        .category-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .category-tab {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .category-tab:hover {
+            border-color: #FF6B35;
+            color: #FF6B35;
+        }
+        
+        .category-tab.active {
+            background: #FF6B35;
+            color: white;
+            border-color: #FF6B35;
+        }
+        
+        /* Menu Grid */
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 25px;
+        }
+        
+        .menu-card {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 3px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            border-color: #FF6B35;
+        }
+        
+        .menu-card-header {
+            padding: 20px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+        }
+        
+        .menu-card-header h3 {
+            font-size: 20px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .menu-card-header .description {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .price-badge {
+            display: inline-block;
+            background: #FF6B35;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .menu-card-body {
+            padding: 20px;
+        }
+        
+        .status-toggle {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: #ccc;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #4CAF50;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            left: 28px;
+        }
+        
+        /* Menu Options */
+        .menu-options {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .menu-options h4 {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        
+        .option-name {
+            font-size: 14px;
+            color: #333;
+        }
+        
+        .option-price {
+            font-size: 14px;
+            color: #666;
+            font-weight: bold;
+        }
+        
+        .option-delete {
+            background: #ff5252;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        
+        /* Action Buttons */
+        .card-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+        
+        .btn-edit {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-edit:hover {
+            background: #1976D2;
+        }
+        
+        .btn-delete {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.3s;
+        }
+        
+        .btn-delete:hover {
+            background: #d32f2f;
+        }
+        
+        .btn-add-option {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            transition: all 0.3s;
+        }
+        
+        .btn-add-option:hover {
+            background: #388E3C;
+        }
+        
+        /* Badges */
+        .badges {
+            display: flex;
+            gap: 8px;
+            margin: 10px 0;
+        }
+        
+        .badge {
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .badge-popular {
+            background: #FFE5D9;
+            color: #FF6B35;
+        }
+        
+        .badge-recommended {
+            background: #E3F2FD;
+            color: #2196F3;
+        }
+        
+        .badge-hot {
+            background: #FFEBEE;
+            color: #f44336;
+        }
+        
+        /* Modal Preview */
+        .modal-preview {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-top: 30px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #FF6B35;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .checkbox-item input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="preview-header">
+            <h1>🎨 UI Preview: หน้าจัดการเมนู Admin Dashboard</h1>
+            <p>ตัวอย่างหน้าจอการจัดการเมนูอาหารสำหรับ Admin ของระบบครัวคุณหญิง</p>
+        </div>
+        
+        <!-- Admin Layout -->
+        <div class="admin-layout">
+            <!-- Sidebar -->
+            <div class="sidebar-preview">
+                <h3>ครัวคุณหญิง Admin</h3>
+                <nav>
+                    <a href="#" class="nav-item">
+                        <i class="fas fa-shopping-bag"></i> คำสั่งซื้อ
+                    </a>
+                    <a href="#" class="nav-item active">
+                        <i class="fas fa-utensils"></i> จัดการเมนู
+                    </a>
+                    <a href="#" class="nav-item">
+                        <i class="fas fa-chart-bar"></i> รายงาน
+                    </a>
+                    <a href="#" class="nav-item">
+                        <i class="fas fa-users-cog"></i> จัดการ Admin
+                    </a>
+                    <a href="#" class="nav-item">
+                        <i class="fas fa-cog"></i> ตั้งค่า
+                    </a>
+                </nav>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="main-content">
+                <div class="content-header">
+                    <h2>จัดการเมนูอาหาร</h2>
+                    <button class="btn-primary">
+                        <i class="fas fa-plus"></i> เพิ่มเมนูใหม่
+                    </button>
+                </div>
+                
+                <!-- Category Tabs -->
+                <div class="category-tabs">
+                    <div class="category-tab active">ทั้งหมด (48)</div>
+                    <div class="category-tab">อาหารจานเดียว (12)</div>
+                    <div class="category-tab">ก๋วยเตี๋ยว (8)</div>
+                    <div class="category-tab">กับข้าว (10)</div>
+                    <div class="category-tab">ยำ (6)</div>
+                    <div class="category-tab">น้ำตก (4)</div>
+                    <div class="category-tab">ส้มตำ (5)</div>
+                    <div class="category-tab">ทานเล่น (3)</div>
+                </div>
+                
+                <!-- Menu Grid -->
+                <div class="menu-grid">
+                    <!-- Menu Card 1 -->
+                    <div class="menu-card">
+                        <div class="menu-card-header">
+                            <h3>ข้าวผัดกุ้ง</h3>
+                            <p class="description">ข้าวผัดกุ้งสดใหม่ หอมกระเทียม</p>
+                            <span class="price-badge">฿60</span>
+                        </div>
+                        <div class="menu-card-body">
+                            <div class="status-toggle">
+                                <span>สถานะ: พร้อมขาย</span>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                            
+                            <div class="badges">
+                                <span class="badge badge-popular">🔥 ยอดนิยม</span>
+                                <span class="badge badge-recommended">⭐ แนะนำ</span>
+                            </div>
+                            
+                            <div class="menu-options">
+                                <h4>ตัวเลือกเพิ่มเติม</h4>
+                                <div class="option-item">
+                                    <span class="option-name">🌶️ เพิ่มความเผ็ด</span>
+                                    <span class="option-price">+฿0</span>
+                                    <button class="option-delete">ลบ</button>
+                                </div>
+                                <div class="option-item">
+                                    <span class="option-name">🍳 ไข่ดาว</span>
+                                    <span class="option-price">+฿10</span>
+                                    <button class="option-delete">ลบ</button>
+                                </div>
+                                <button class="btn-add-option">
+                                    <i class="fas fa-plus"></i> เพิ่มตัวเลือก
+                                </button>
+                            </div>
+                            
+                            <div class="card-actions">
+                                <button class="btn-edit">
+                                    <i class="fas fa-edit"></i> แก้ไข
+                                </button>
+                                <button class="btn-delete">
+                                    <i class="fas fa-trash"></i> ลบ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Menu Card 2 -->
+                    <div class="menu-card">
+                        <div class="menu-card-header">
+                            <h3>ผัดกะเพราหมูสับ</h3>
+                            <p class="description">ผัดกะเพราหมูสับ ใบกะเพราสด</p>
+                            <span class="price-badge">฿50</span>
+                        </div>
+                        <div class="menu-card-body">
+                            <div class="status-toggle">
+                                <span>สถานะ: หมดชั่วคราว</span>
+                                <div class="toggle-switch"></div>
+                            </div>
+                            
+                            <div class="badges">
+                                <span class="badge badge-hot">🌶️ เผ็ดจัด</span>
+                            </div>
+                            
+                            <div class="menu-options">
+                                <h4>ตัวเลือกเพิ่มเติม</h4>
+                                <div class="option-item">
+                                    <span class="option-name">🍳 ไข่ดาว</span>
+                                    <span class="option-price">+฿10</span>
+                                    <button class="option-delete">ลบ</button>
+                                </div>
+                                <button class="btn-add-option">
+                                    <i class="fas fa-plus"></i> เพิ่มตัวเลือก
+                                </button>
+                            </div>
+                            
+                            <div class="card-actions">
+                                <button class="btn-edit">
+                                    <i class="fas fa-edit"></i> แก้ไข
+                                </button>
+                                <button class="btn-delete">
+                                    <i class="fas fa-trash"></i> ลบ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Menu Card 3 -->
+                    <div class="menu-card">
+                        <div class="menu-card-header">
+                            <h3>ก๋วยเตี๋ยวต้มยำ</h3>
+                            <p class="description">ก๋วยเตี๋ยวต้มยำน้ำข้น รสจัดจ้าน</p>
+                            <span class="price-badge">฿45</span>
+                        </div>
+                        <div class="menu-card-body">
+                            <div class="status-toggle">
+                                <span>สถานะ: พร้อมขาย</span>
+                                <div class="toggle-switch active"></div>
+                            </div>
+                            
+                            <div class="menu-options">
+                                <h4>ตัวเลือกเพิ่มเติม</h4>
+                                <div class="option-item">
+                                    <span class="option-name">🍜 เส้นพิเศษ</span>
+                                    <span class="option-price">+฿5</span>
+                                    <button class="option-delete">ลบ</button>
+                                </div>
+                                <div class="option-item">
+                                    <span class="option-name">🥩 หมูพิเศษ</span>
+                                    <span class="option-price">+฿10</span>
+                                    <button class="option-delete">ลบ</button>
+                                </div>
+                                <div class="option-item">
+                                    <span class="option-name">🦐 กุ้งสด</span>
+                                    <span class="option-price">+฿20</span>
+                                    <button class="option-delete">ลบ</button>
+                                </div>
+                                <button class="btn-add-option">
+                                    <i class="fas fa-plus"></i> เพิ่มตัวเลือก
+                                </button>
+                            </div>
+                            
+                            <div class="card-actions">
+                                <button class="btn-edit">
+                                    <i class="fas fa-edit"></i> แก้ไข
+                                </button>
+                                <button class="btn-delete">
+                                    <i class="fas fa-trash"></i> ลบ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Modal Form Preview -->
+        <div class="modal-preview">
+            <div class="modal-header">
+                <h3>🍽️ ฟอร์มเพิ่ม/แก้ไขเมนู</h3>
+            </div>
+            
+            <form>
+                <div class="form-group">
+                    <label>ชื่อเมนู</label>
+                    <input type="text" placeholder="เช่น ข้าวผัดกุ้ง">
+                </div>
+                
+                <div class="form-group">
+                    <label>คำอธิบาย</label>
+                    <textarea rows="3" placeholder="รายละเอียดของเมนู..."></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>หมวดหมู่</label>
+                    <select>
+                        <option>อาหารจานเดียว</option>
+                        <option>ก๋วยเตี๋ยว</option>
+                        <option>กับข้าว</option>
+                        <option>ยำ</option>
+                        <option>น้ำตก</option>
+                        <option>ส้มตำ</option>
+                        <option>ทานเล่น</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label>ราคา (บาท)</label>
+                    <input type="number" placeholder="60">
+                </div>
+                
+                <div class="form-group">
+                    <label>ตัวเลือกพิเศษ</label>
+                    <div class="checkbox-group">
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="popular">
+                            <label for="popular">🔥 ยอดนิยม</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="recommended">
+                            <label for="recommended">⭐ แนะนำ</label>
+                        </div>
+                        <div class="checkbox-item">
+                            <input type="checkbox" id="hot">
+                            <label for="hot">🌶️ เผ็ดจัด</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-primary" style="width: 100%; margin-top: 20px;">
+                    <i class="fas fa-save"></i> บันทึกเมนู
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>
