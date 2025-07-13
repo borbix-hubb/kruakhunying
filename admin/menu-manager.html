@@ -255,6 +255,8 @@
         // Load all menu data
         async function loadMenuData() {
             try {
+                console.log('Loading menu data...');
+                
                 // Load menu items
                 const { data: items, error: itemsError } = await supabaseClient
                     .from('menu_items')
@@ -262,23 +264,39 @@
                     .order('category_id', { ascending: true })
                     .order('name', { ascending: true });
 
-                if (itemsError) throw itemsError;
+                if (itemsError) {
+                    console.error('Error loading menu items:', itemsError);
+                    throw itemsError;
+                }
+                
                 menuItems = items || [];
+                console.log('Loaded menu items:', menuItems.length);
 
-                // Load menu options
-                const { data: options, error: optionsError } = await supabaseClient
-                    .from('menu_options')
-                    .select('*')
-                    .order('menu_item_id', { ascending: true })
-                    .order('option_name', { ascending: true });
+                // Load menu options - don't fail if table doesn't exist
+                try {
+                    const { data: options, error: optionsError } = await supabaseClient
+                        .from('menu_options')
+                        .select('*')
+                        .order('menu_item_id', { ascending: true })
+                        .order('option_name', { ascending: true });
 
-                if (optionsError) throw optionsError;
-                menuOptions = options || [];
+                    if (optionsError) {
+                        console.warn('Warning loading menu options:', optionsError);
+                        // Continue without options
+                        menuOptions = [];
+                    } else {
+                        menuOptions = options || [];
+                        console.log('Loaded menu options:', menuOptions.length);
+                    }
+                } catch (optError) {
+                    console.warn('Menu options table might not exist:', optError);
+                    menuOptions = [];
+                }
 
                 displayMenuByCategory();
             } catch (error) {
                 console.error('Error loading menu data:', error);
-                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
             }
         }
 
@@ -286,6 +304,13 @@
         function displayMenuByCategory() {
             const categoriesDiv = document.getElementById('menuCategories');
             categoriesDiv.innerHTML = '';
+
+            console.log('Displaying menu items:', menuItems.length);
+
+            if (menuItems.length === 0) {
+                categoriesDiv.innerHTML = '<p style="text-align: center; padding: 40px; color: #999;">ไม่พบข้อมูลเมนู</p>';
+                return;
+            }
 
             // Group menu items by category
             const categories = {};
