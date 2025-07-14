@@ -431,7 +431,13 @@ function searchMenu(query) {
 // Show item options modal
 function showItemOptions(itemId) {
     const item = menuData.find(i => i.id === itemId);
-    if (!item) return;
+    if (!item) {
+        console.error('Item not found:', itemId);
+        return;
+    }
+    
+    console.log('Showing options for item:', item);
+    console.log('Item options:', item.options);
     
     // Create modal for options (always show even for single option to include note)
     const modal = document.createElement('div');
@@ -476,6 +482,14 @@ function showItemOptions(itemId) {
     `;
     
     document.body.appendChild(modal);
+}
+
+// Close item options modal
+function closeItemOptionsModal() {
+    const modal = document.getElementById('itemOptionsModal');
+    if (modal) {
+        modal.remove();
+    }
 }
 
 // Select option and add to cart
