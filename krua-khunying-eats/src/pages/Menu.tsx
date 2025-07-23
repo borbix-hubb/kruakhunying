@@ -1,0 +1,534 @@
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Star, Plus, LogOut, ShoppingCart, Clock } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import BaseLayout from '@/components/layout/BaseLayout';
+import MenuItemOptionsModal from '@/components/MenuItemOptionsModal';
+
+interface MenuItem {
+  id: string;
+  name: string;
+  name_en: string;
+  description: string;
+  price: number;
+  rating: number;
+  review_count: number;
+  is_popular: boolean;
+  is_spicy: boolean;
+  is_available: boolean;
+  category_id: string;
+  subcategory_id: string | null;
+  image_url: string | null;
+  meat_types: string[] | null;
+  subcategories?: {
+    name: string;
+  } | null;
+}
+
+interface MenuCategory {
+  id: string;
+  name: string;
+  name_en: string;
+  icon: string;
+  sort_order: number;
+}
+
+interface SubCategory {
+  id: string;
+  name: string;
+  category_id: string;
+  sort_order: number;
+  is_active: boolean;
+}
+
+const Menu = () => {
+  const { user, signOut, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [categories, setCategories] = useState<MenuCategory[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
+  const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string>('');
+  const [activeSubCategory, setActiveSubCategory] = useState<string>('');
+  const [loading, setLoading] = useState(true);
+  const [cart, setCart] = useState<{[key: string]: number}>({});
+  const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
+  const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
+  const [latestOrderId, setLatestOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchMenuData();
+    loadCart();
+    fetchLatestOrder();
+  }, [user]);
+
+  const loadCart = () => {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      const cartData = JSON.parse(savedCart);
+      const cartCounts: {[key: string]: number} = {};
+      cartData.forEach((item: any) => {
+        cartCounts[item.id] = item.quantity;
+      });
+      setCart(cartCounts);
+    }
+  };
+
+  const fetchLatestOrder = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('orders')
+        .select('id')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .single();
+
+      if (data && !error) {
+        setLatestOrderId(data.id);
+      }
+    } catch (error) {
+      console.error('Error fetching latest order:', error);
+    }
+  };
+
+  const fetchMenuData = async () => {
+    try {
+      // Fetch categories
+      const { data: categoriesData, error: categoriesError } = await supabase
+        .from('menu_categories')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      if (categoriesError) throw categoriesError;
+
+      // Fetch subcategories
+      const { data: subCategoriesData, error: subCategoriesError } = await supabase
+        .from('subcategories')
+        .select('*')
+        .eq('is_active', true)
+        .order('sort_order');
+
+      if (subCategoriesError) throw subCategoriesError;
+
+      // Fetch menu items with subcategories
+      const { data: itemsData, error: itemsError } = await supabase
+        .from('menu_items')
+        .select(`
+          *,
+          subcategories (
+            name
+          )
+        `)
+        .eq('is_available', true);
+
+      if (itemsError) throw itemsError;
+
+      setCategories(categoriesData || []);
+      setSubCategories(subCategoriesData || []);
+      console.log('Menu items loaded:', itemsData);
+      // Debug: Check if any items have image_url
+      const itemsWithImages = itemsData?.filter(item => item.image_url) || [];
+      console.log(`Items with images: ${itemsWithImages.length} out of ${itemsData?.length || 0}`);
+      if (itemsWithImages.length > 0) {
+        console.log('Sample image URL:', itemsWithImages[0].image_url);
+      }
+      setMenuItems(itemsData || []);
+      
+      // Set first category as active
+      if (categoriesData && categoriesData.length > 0) {
+        setActiveCategory(categoriesData[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching menu data:', error);
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: "ไม่สามารถโหลดข้อมูลเมนูได้",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: "ออกจากระบบสำเร็จ",
+      description: "ขอบคุณที่ใช้บริการ"
+    });
+  };
+
+  const hasOptions = (item: MenuItem) => {
+    // Check if item has meat_types array
+    if (item.meat_types && item.meat_types.length > 0) {
+      return true;
+    }
+    
+    // Check for various formats (legacy support)
+    const hasParentheses = item.name.includes('(') && item.name.includes(')');
+    const hasMeatOptions = item.name.includes('หมู') || item.name.includes('ไก่') || 
+                          item.name.includes('กุ้ง') || item.name.includes('หมึก') ||
+                          item.name.includes('เนื้อ') || item.name.includes('ทะเล');
+    
+    // TEMPORARY: For testing, allow options for specific common dishes
+    const testDishes = ['ผัดกะเพรา', 'ข้าวผัด', 'ผัดพริกแกง', 'ผัดไทย', 'ผัดซีอิ๊ว', 'ราดหน้า', 'ผัดขี้เมา'];
+    const isTestDish = testDishes.some(dish => item.name.includes(dish));
+    
+    // Debug log
+    console.log('Checking item:', item.name, 'meat_types:', item.meat_types, 'hasParentheses:', hasParentheses, 'hasMeatOptions:', hasMeatOptions, 'isTestDish:', isTestDish);
+    
+    return (hasParentheses && hasMeatOptions) || isTestDish;
+  };
+
+  const handleAddToCart = (item: MenuItem) => {
+    console.log('handleAddToCart called for:', item.name);
+    if (hasOptions(item)) {
+      console.log('Opening options modal for:', item.name);
+      setSelectedItem(item);
+      setIsOptionsModalOpen(true);
+    } else {
+      console.log('Adding directly to cart:', item.name);
+      addToCart(item, {});
+    }
+  };
+
+  const addToCart = (item: MenuItem, options: { meat?: string; special?: boolean; totalPrice?: number }) => {
+    const savedCart = localStorage.getItem('cart');
+    let cartData = savedCart ? JSON.parse(savedCart) : [];
+    
+    // Create a unique identifier for items with options
+    const cartItemId = options.meat || options.special 
+      ? `${item.id}_${options.meat || 'default'}_${options.special ? 'special' : 'regular'}`
+      : item.id;
+    
+    const existingItemIndex = cartData.findIndex((cartItem: any) => cartItem.cartItemId === cartItemId);
+    
+    if (existingItemIndex >= 0) {
+      cartData[existingItemIndex].quantity += 1;
+    } else {
+      cartData.push({
+        id: item.id,
+        cartItemId,
+        name: item.name,
+        price: options.totalPrice || item.price,
+        basePrice: item.price,
+        quantity: 1,
+        image: '🍽️',
+        options: options.meat || options.special ? {
+          meat: options.meat,
+          special: options.special
+        } : undefined
+      });
+    }
+    
+    localStorage.setItem('cart', JSON.stringify(cartData));
+    
+    setCart(prev => ({
+      ...prev,
+      [cartItemId]: (prev[cartItemId] || 0) + 1
+    }));
+    
+    const optionsText = [];
+    if (options.meat) {
+      // Use the meat name directly since it's already in Thai
+      optionsText.push(options.meat);
+    }
+    if (options.special) {
+      optionsText.push('พิเศษ');
+    }
+    
+    toast({
+      title: "เพิ่มลงตะกร้าแล้ว",
+      description: `${item.name}${optionsText.length > 0 ? ` (${optionsText.join(', ')})` : ''} ถูกเพิ่มลงตะกร้าแล้ว`
+    });
+  };
+
+  const goToCart = () => {
+    navigate('/cart');
+  };
+
+  const goToOrderStatus = () => {
+    if (latestOrderId) {
+      navigate(`/order/${latestOrderId}`);
+    }
+  };
+
+  const filteredItems = menuItems.filter(item => {
+    let matches = true;
+    
+    if (activeCategory) {
+      matches = matches && item.category_id === activeCategory;
+    }
+    
+    if (activeSubCategory) {
+      matches = matches && item.subcategory_id === activeSubCategory;
+    }
+    
+    return matches;
+  });
+
+  // Check if current category is beverages or coffee
+  const currentCategory = categories.find(cat => cat.id === activeCategory);
+  const isBeverageCategory = currentCategory?.name.includes('เครื่องดื่ม') || currentCategory?.name.includes('กาแฟ');
+  
+  // Get subcategories for current category
+  const currentSubCategories = subCategories.filter(sub => 
+    sub.category_id === activeCategory
+  );
+
+  const totalCartItems = Object.values(cart).reduce((sum, count) => sum + count, 0);
+
+  // Show loading while fetching menu data
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="font-kanit text-muted-foreground">กำลังโหลด...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <BaseLayout>
+      {/* Menu Header */}
+      <div className="bg-white shadow-sm border-b sticky top-16 z-40">
+        <div className="container mx-auto px-4 py-4 flex justify-between items-center">
+          <div>
+            <h1 className="text-2xl font-bold text-primary font-kanit">เมนูอาหาร</h1>
+            {user && (
+              <p className="text-sm text-muted-foreground font-kanit">สวัสดี {user.email}</p>
+            )}
+          </div>
+          
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {latestOrderId && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="font-kanit"
+                onClick={goToOrderStatus}
+              >
+                <Clock className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">สถานะคำสั่งซื้อ</span>
+                <span className="sm:hidden">สถานะ</span>
+              </Button>
+            )}
+            
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="relative font-kanit"
+              onClick={goToCart}
+            >
+              <ShoppingCart className="h-4 w-4 mr-1 sm:mr-2" />
+              ตะกร้า
+              {totalCartItems > 0 && (
+                <Badge variant="destructive" className="absolute -top-2 -right-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                  {totalCartItems}
+                </Badge>
+              )}
+            </Button>
+            
+            {user && (
+              <Button variant="ghost" size="sm" onClick={handleSignOut} className="font-kanit">
+                <LogOut className="h-4 w-4 mr-1 sm:mr-2" />
+                <span className="hidden sm:inline">ออกจากระบบ</span>
+                <span className="sm:hidden">ออก</span>
+              </Button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="container mx-auto px-3 sm:px-4 py-4 sm:py-6">
+        {/* Category Tabs */}
+        <div className="flex flex-wrap gap-1.5 sm:gap-2 mb-4 sm:mb-6 justify-center">
+          {categories.map((category) => (
+            <Button
+              key={category.id}
+              variant={activeCategory === category.id ? "default" : "outline"}
+              size="sm"
+              onClick={() => {
+                setActiveCategory(category.id);
+                setActiveSubCategory(''); // Reset subcategory when changing category
+              }}
+              className="font-kanit text-xs sm:text-sm px-2 sm:px-4"
+            >
+              <span className="mr-1 sm:mr-2">{category.icon}</span>
+              <span className="hidden sm:inline">{category.name}</span>
+              <span className="sm:hidden">{category.name.replace(/[🍽️🥤🍰🥗🍕🍝]/g, '').trim()}</span>
+            </Button>
+          ))}
+        </div>
+
+        {/* Subcategory Tabs for Beverages */}
+        {isBeverageCategory && currentSubCategories.length > 0 && (
+          <div className="mb-6">
+            <div className="flex flex-wrap gap-2 justify-center">
+              <Button
+                variant={activeSubCategory === '' ? "default" : "outline"}
+                size="sm"
+                onClick={() => setActiveSubCategory('')}
+                className="font-kanit"
+              >
+                ทั้งหมด
+              </Button>
+              {currentSubCategories.map((subCategory) => (
+                <Button
+                  key={subCategory.id}
+                  variant={activeSubCategory === subCategory.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setActiveSubCategory(subCategory.id)}
+                  className="font-kanit"
+                >
+                  {subCategory.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Menu Items List */}
+        <div className="space-y-3">
+          {filteredItems.map((item) => (
+            <Card key={item.id} className="menu-item-card overflow-hidden hover:shadow-md transition-shadow">
+              <CardContent className="p-0">
+                <div className="flex items-center p-3 sm:p-4">
+                  {/* Image section */}
+                  {item.image_url && (
+                    <div className="relative w-24 h-24 sm:w-32 sm:h-32 md:w-36 md:h-36 mr-3 sm:mr-4 rounded-lg overflow-hidden flex-shrink-0">
+                      <img 
+                        src={item.image_url} 
+                        alt={item.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          console.error('Image failed to load:', item.image_url);
+                          e.currentTarget.style.display = 'none';
+                        }}
+                      />
+                      {item.is_popular && (
+                        <Badge className="absolute top-1 right-1 bg-primary text-primary-foreground text-xs px-1 py-0">
+                          🔥
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Content section */}
+                  <div className="flex-1 min-w-0 mr-2 sm:mr-3">
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-1">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground font-kanit text-sm sm:text-base leading-tight">
+                          {item.name}
+                        </h3>
+                        {item.subcategories && (
+                          <p className="text-xs text-muted-foreground font-kanit">
+                            {item.subcategories.name}
+                          </p>
+                        )}
+                        {item.meat_types && item.meat_types.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {item.meat_types.map((type) => (
+                              <span key={type} className="text-xs bg-secondary/50 px-1.5 py-0.5 rounded font-kanit">
+                                {type}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {/* Show if item has options */}
+                        {hasOptions(item) && (
+                          <p className="text-xs text-primary font-kanit mt-1">
+                            มีตัวเลือก
+                          </p>
+                        )}
+                      </div>
+                      
+                      {/* Badges - shown below title on mobile */}
+                      <div className="flex gap-1 mt-1 sm:mt-0 sm:ml-2">
+                        {item.is_popular && (
+                          <Badge className="bg-primary text-primary-foreground text-xs px-1 py-0">
+                            ยอดนิยม
+                          </Badge>
+                        )}
+                        {item.is_spicy && (
+                          <Badge className="bg-red-500 text-white text-xs px-1 py-0">
+                            เผ็ด
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Rating and price row */}
+                    <div className="flex items-center justify-between mt-2">
+                      <div className="flex items-center space-x-1 sm:space-x-2">
+                        <div className="flex items-center space-x-0.5 sm:space-x-1">
+                          <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                          <span className="text-xs sm:text-sm font-medium">{item.rating}</span>
+                          <span className="text-xs text-muted-foreground hidden sm:inline">({item.review_count})</span>
+                        </div>
+                      </div>
+                      
+                      <div className="text-right">
+                        <div className="text-base sm:text-lg font-bold text-primary font-kanit">
+                          ฿{item.price}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Add button section */}
+                  <div className="flex flex-col items-center space-y-1 sm:space-y-2">
+                    {Object.keys(cart).filter(key => key.startsWith(item.id)).reduce((sum, key) => sum + cart[key], 0) > 0 && (
+                      <Badge variant="secondary" className="font-kanit text-xs">
+                        {Object.keys(cart).filter(key => key.startsWith(item.id)).reduce((sum, key) => sum + cart[key], 0)}
+                      </Badge>
+                    )}
+                    <Button 
+                      size="sm" 
+                      variant="warm" 
+                      onClick={() => handleAddToCart(item)}
+                      className="font-kanit px-3 py-1.5 h-8 text-sm"
+                    >
+                      <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                      เพิ่ม
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {filteredItems.length === 0 && (
+          <div className="text-center py-12">
+            <p className="text-muted-foreground font-kanit text-lg">ไม่พบเมนูในหมวดหมู่นี้</p>
+          </div>
+        )}
+      </div>
+
+      {/* Options Modal */}
+      <MenuItemOptionsModal
+        isOpen={isOptionsModalOpen}
+        onClose={() => {
+          setIsOptionsModalOpen(false);
+          setSelectedItem(null);
+        }}
+        item={selectedItem}
+        onAddToCart={addToCart}
+      />
+    </BaseLayout>
+  );
+};
+
+export default Menu;

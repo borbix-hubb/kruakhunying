@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Supabase Storage</title>
+</head>
+<body>
+    <h1>Test Storage Bucket</h1>
+    <div id="result"></div>
+    
+    <script type="module">
+        import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm'
+        
+        const supabaseUrl = 'https://xculkwyrcumnboqmuuyz.supabase.co'
+        const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhjdWxrd3lyY3VtbmJvcW11dXl6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzE1ODk2NzMsImV4cCI6MjA0NzE2NTY3M30.n6mqjlZ8Epo5PDpH4sKT9i0cELUQ6fexvQ00-sM-cHQ'
+        
+        const supabase = createClient(supabaseUrl, supabaseKey)
+        
+        async function testStorage() {
+            const result = document.getElementById('result')
+            
+            try {
+                // List buckets
+                const { data: buckets, error } = await supabase.storage.listBuckets()
+                
+                if (error) {
+                    result.innerHTML = `<p style="color: red;">Error listing buckets: ${error.message}</p>`
+                    return
+                }
+                
+                result.innerHTML = `
+                    <h2>Available Buckets:</h2>
+                    <pre>${JSON.stringify(buckets, null, 2)}</pre>
+                    <p>Total buckets: ${buckets?.length || 0}</p>
+                    <p>Has menu-images bucket: ${buckets?.some(b => b.name === 'menu-images') ? 'Yes' : 'No'}</p>
+                `
+            } catch (err) {
+                result.innerHTML = `<p style="color: red;">Error: ${err.message}</p>`
+            }
+        }
+        
+        testStorage()
+    </script>
+</body>
+</html>

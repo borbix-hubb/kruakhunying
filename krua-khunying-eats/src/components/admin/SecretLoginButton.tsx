@@ -1,0 +1,39 @@
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { Lock } from 'lucide-react';
+
+const SecretLoginButton = () => {
+  const navigate = useNavigate();
+  const [clickCount, setClickCount] = useState(0);
+
+  // ต้องคลิก 3 ครั้งภายใน 2 วินาที
+  const handleClick = () => {
+    setClickCount(prev => prev + 1);
+    
+    if (clickCount >= 2) {
+      // คลิกครบ 3 ครั้ง ไปหน้า login
+      navigate('/auth');
+      setClickCount(0);
+    }
+
+    // รีเซ็ตหลังจาก 2 วินาที
+    setTimeout(() => {
+      setClickCount(0);
+    }, 2000);
+  };
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      className="fixed bottom-4 left-4 h-8 w-8 opacity-20 hover:opacity-60 transition-opacity duration-300"
+      onClick={handleClick}
+      title={`คลิก ${3 - clickCount} ครั้ง`}
+    >
+      <Lock className="h-4 w-4" />
+    </Button>
+  );
+};
+
+export default SecretLoginButton;
