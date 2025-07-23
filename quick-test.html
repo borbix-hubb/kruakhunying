@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Quick Test - ตรวจสอบ Supabase</title>
+    <style>
+        body { font-family: 'Prompt', sans-serif; padding: 20px; }
+        .result { padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #e8f5e9; color: #2e7d32; }
+        .error { background: #ffebee; color: #c62828; }
+        .info { background: #e3f2fd; color: #1565c0; }
+        button { background: #e91e63; color: white; border: none; padding: 10px 20px; border-radius: 5px; margin: 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>🔍 ตรวจสอบ Supabase อย่างรวดเร็ว</h1>
+    
+    <button onclick="testAll()">ตรวจสอบทั้งหมด</button>
+    <button onclick="location.reload()">รีเฟรช</button>
+    <div id="results"></div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+    <script>
+        async function testAll() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<div class="info">กำลังตรวจสอบ...</div>';
+            
+            let html = '';
+            
+            try {
+                // 1. Test connection
+                html += '<h3>1. การเชื่อมต่อ</h3>';
+                if (!window.supabaseClient) {
+                    html += '<div class="error">❌ Supabase client ไม่ได้เริ่มต้น</div>';
+                    results.innerHTML = html;
+                    return;
+                }
+                html += '<div class="success">✅ Supabase client พร้อมใช้งาน</div>';
+                
+                // 2. Test tables
+                html += '<h3>2. ตรวจสอบตาราง</h3>';
+                const tables = ['menu_categories', 'menu_items', 'customers', 'orders', 'order_items', 'admin_users'];
+                
+                for (const table of tables) {
+                    try {
+                        const { count, error } = await window.supabaseClient
+                            .from(table)
+                            .select('*', { count: 'exact', head: true });
+                        
+                        if (error) {
+                            html += `<div class="error">❌ ตาราง ${table}: ${error.message}</div>`;
+                        } else {
+                            html += `<div class="success">✅ ตาราง ${table}: ${count || 0} แถว</div>`;
+                        }
+                    } catch (e) {
+                        html += `<div class="error">❌ ตาราง ${table}: ${e.message}</div>`;
+                    }
+                }
+                
+                // 3. Test orders specifically
+                html += '<h3>3. ตรวจสอบคำสั่งซื้อ</h3>';
+                const { data: orders, error: ordersError } = await window.supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (name, phone, dorm, room),
+                        order_items (quantity, price, menu_items (name))
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (ordersError) {
+                    html += `<div class="error">❌ ไม่สามารถดึงข้อมูลคำสั่งซื้อ: ${ordersError.message}</div>`;
+                } else if (!orders || orders.length === 0) {
+                    html += '<div class="info">ℹ️ ไม่มีคำสั่งซื้อในระบบ</div>';
+                    html += '<div class="info">📝 ต้องรัน SQL scripts และสร้างข้อมูลทดสอบ</div>';
+                } else {
+                    html += `<div class="success">✅ พบคำสั่งซื้อ ${orders.length} รายการ</div>`;
+                    html += `<div class="info">คำสั่งซื้อล่าสุด: ${orders[0].order_number || orders[0].id}</div>`;
+                }
+                
+                // 4. Test menu items  
+                html += '<h3>4. ตรวจสอบเมนู</h3>';
+                const { data: menuItems, error: menuError } = await window.supabaseClient
+                    .from('menu_items')
+                    .select('count');
+                
+                if (menuError) {
+                    html += `<div class="error">❌ ไม่สามารถดึงข้อมูลเมนู: ${menuError.message}</div>`;
+                    html += '<div class="error">🚨 ตาราง menu_items ไม่มีหรือไม่มีข้อมูล - ต้องรัน SQL scripts</div>';
+                } else {
+                    html += `<div class="success">✅ ระบบเมนูพร้อมใช้งาน</div>`;
+                }
+                
+            } catch (e) {
+                html += `<div class="error">❌ เกิดข้อผิดพลาด: ${e.message}</div>`;
+            }
+            
+            results.innerHTML = html;
+        }
+        
+        // Auto run on load
+        window.addEventListener('load', testAll);
+    </script>
+</body>
+</html>

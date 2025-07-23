@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Delivery Method</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+</head>
+<body>
+    <h1>Debug Delivery Method Data</h1>
+    <div id="result"></div>
+
+    <script>
+        async function debugOrders() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                if (!window.supabaseClient) {
+                    resultDiv.innerHTML = '<p>Supabase client not initialized</p>';
+                    return;
+                }
+                
+                // Fetch orders
+                const { data, error } = await window.supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) {
+                    resultDiv.innerHTML = `<p>Error: ${JSON.stringify(error)}</p>`;
+                    return;
+                }
+                
+                // Display raw data
+                resultDiv.innerHTML = `
+                    <h2>Orders from Database:</h2>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                    
+                    <h2>Check delivery_method values:</h2>
+                    <ul>
+                        ${data.map(order => `
+                            <li>
+                                Order ${order.order_number}: 
+                                delivery_method = "${order.delivery_method || 'NULL'}"
+                                (${order.delivery_method ? 'Has value' : 'Missing'})
+                            </li>
+                        `).join('')}
+                    </ul>
+                `;
+                
+            } catch (error) {
+                resultDiv.innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+        
+        // Run on page load
+        debugOrders();
+    </script>
+</body>
+</html>

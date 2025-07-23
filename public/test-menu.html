@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบเมนู - ครัวคุณหญิง</title>
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <h1>ทดสอบการโหลดเมนู</h1>
+    <div id="result"></div>
+    
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://jqyuvdyauhfuvlzqefqx.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpxeXV2ZHlhdWhmdXZsenFlZnF4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzU0NTg1OTYsImV4cCI6MjA1MTAzNDU5Nn0.8AzutA4I5YgKFYtDULISA5r3xuY1Uw0xDgrbY2FNjRg';
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function testMenu() {
+            const result = document.getElementById('result');
+            
+            try {
+                // Test 1: Direct menu_items query
+                result.innerHTML += '<h2>Test 1: menu_items table</h2>';
+                const { data: items, error: itemError } = await supabaseClient
+                    .from('menu_items')
+                    .select('*')
+                    .limit(5);
+                
+                if (itemError) {
+                    result.innerHTML += `<p style="color:red">Error: ${itemError.message}</p>`;
+                } else {
+                    result.innerHTML += `<p style="color:green">Found ${items.length} items</p>`;
+                    result.innerHTML += '<pre>' + JSON.stringify(items, null, 2) + '</pre>';
+                }
+                
+                // Test 2: Categories
+                result.innerHTML += '<h2>Test 2: menu_categories table</h2>';
+                const { data: categories, error: catError } = await supabaseClient
+                    .from('menu_categories')
+                    .select('*');
+                
+                if (catError) {
+                    result.innerHTML += `<p style="color:red">Error: ${catError.message}</p>`;
+                } else {
+                    result.innerHTML += `<p style="color:green">Found ${categories.length} categories</p>`;
+                    result.innerHTML += '<pre>' + JSON.stringify(categories, null, 2) + '</pre>';
+                }
+                
+                // Test 3: View
+                result.innerHTML += '<h2>Test 3: menu_with_options view</h2>';
+                const { data: viewData, error: viewError } = await supabaseClient
+                    .from('menu_with_options')
+                    .select('*')
+                    .limit(5);
+                
+                if (viewError) {
+                    result.innerHTML += `<p style="color:red">Error: ${viewError.message}</p>`;
+                } else {
+                    result.innerHTML += `<p style="color:green">View works! Found ${viewData.length} items</p>`;
+                    result.innerHTML += '<pre>' + JSON.stringify(viewData, null, 2) + '</pre>';
+                }
+                
+            } catch (e) {
+                result.innerHTML += `<p style="color:red">Unexpected error: ${e.message}</p>`;
+            }
+        }
+        
+        // Run test
+        testMenu();
+    </script>
+</body>
+</html>

@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตรวจสอบคำสั่งซื้อ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e91e63;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .success {
+            color: #4caf50;
+            background: #e8f5e9;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            color: #f44336;
+            background: #ffebee;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            color: #2196f3;
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+            margin: 5px;
+        }
+        button:hover {
+            background: #d81b60;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        .log {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ตรวจสอบระบบคำสั่งซื้อ</h1>
+        
+        <div class="section">
+            <h2>1. ตรวจสอบ Supabase Connection</h2>
+            <button onclick="checkConnection()">ทดสอบการเชื่อมต่อ</button>
+            <div id="connectionResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>2. ตรวจสอบโครงสร้างตาราง</h2>
+            <button onclick="checkSchema()">ตรวจสอบ Schema</button>
+            <div id="schemaResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>3. ดูข้อมูลคำสั่งซื้อ</h2>
+            <button onclick="loadOrders()">โหลดคำสั่งซื้อ</button>
+            <button onclick="loadOrdersSimple()">โหลดแบบง่าย (ไม่มี JOIN)</button>
+            <div id="ordersResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>4. สร้างคำสั่งซื้อทดสอบ</h2>
+            <button onclick="createTestOrder()">สร้างคำสั่งซื้อทดสอบ</button>
+            <div id="createResult"></div>
+        </div>
+        
+        <div class="section">
+            <h2>5. Console Log</h2>
+            <div class="log" id="consoleLog"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script>
+        // Initialize Supabase
+        const SUPABASE_URL = 'https://znmdqqrrwfkwjunxgleg.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpubWRxcXJyd2Zrd2p1bnhnbGVnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE1MzU2ODQsImV4cCI6MjA2NzExMTY4NH0.FVRH7GKUVb5WZIGgwoE6jwWneBeyQPD-DRCnSRW-FvM';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        // Logging
+        const logs = [];
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('th-TH');
+            const logEntry = `[${timestamp}] ${type.toUpperCase()}: ${message}`;
+            logs.push(logEntry);
+            document.getElementById('consoleLog').textContent = logs.join('\n');
+            console.log(logEntry);
+        }
+        
+        // Check connection
+        async function checkConnection() {
+            const result = document.getElementById('connectionResult');
+            result.innerHTML = '<div class="info">กำลังตรวจสอบ...</div>';
+            
+            try {
+                log('Testing Supabase connection...');
+                
+                const { data, error } = await supabaseClient
+                    .from('menu_categories')
+                    .select('count')
+                    .single();
+                
+                if (error) {
+                    log(`Connection error: ${error.message}`, 'error');
+                    result.innerHTML = `<div class="error">❌ ไม่สามารถเชื่อมต่อได้: ${error.message}</div>`;
+                } else {
+                    log('Connection successful!', 'success');
+                    result.innerHTML = '<div class="success">✅ เชื่อมต่อ Supabase สำเร็จ!</div>';
+                }
+            } catch (e) {
+                log(`Exception: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Check schema
+        async function checkSchema() {
+            const result = document.getElementById('schemaResult');
+            result.innerHTML = '<div class="info">กำลังตรวจสอบ...</div>';
+            
+            try {
+                log('Checking database schema...');
+                
+                // Check tables
+                const tables = ['orders', 'customers', 'order_items', 'menu_items'];
+                let html = '<h4>ตารางที่ตรวจสอบ:</h4><ul>';
+                
+                for (const table of tables) {
+                    try {
+                        const { count, error } = await supabaseClient
+                            .from(table)
+                            .select('*', { count: 'exact', head: true });
+                        
+                        if (error) {
+                            html += `<li>❌ ${table}: ${error.message}</li>`;
+                            log(`Table ${table} error: ${error.message}`, 'error');
+                        } else {
+                            html += `<li>✅ ${table}: พบ ${count || 0} แถว</li>`;
+                            log(`Table ${table}: ${count || 0} rows`);
+                        }
+                    } catch (e) {
+                        html += `<li>❌ ${table}: ${e.message}</li>`;
+                    }
+                }
+                
+                html += '</ul>';
+                result.innerHTML = html;
+                
+            } catch (e) {
+                log(`Schema check error: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Load orders with relations
+        async function loadOrders() {
+            const result = document.getElementById('ordersResult');
+            result.innerHTML = '<div class="info">กำลังโหลด...</div>';
+            
+            try {
+                log('Loading orders with relations...');
+                
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) {
+                    log(`Orders error: ${error.message}`, 'error');
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                } else {
+                    log(`Found ${data?.length || 0} orders`);
+                    
+                    if (!data || data.length === 0) {
+                        result.innerHTML = '<div class="info">ไม่พบคำสั่งซื้อ</div>';
+                    } else {
+                        let html = `<div class="success">✅ พบ ${data.length} คำสั่งซื้อ</div>`;
+                        html += '<table><tr><th>ID</th><th>Customer</th><th>Items</th><th>Total</th><th>Status</th></tr>';
+                        
+                        data.forEach(order => {
+                            const items = order.order_items?.map(item => 
+                                `${item.menu_items?.name || 'Unknown'} x${item.quantity}`
+                            ).join(', ') || 'No items';
+                            
+                            html += `<tr>
+                                <td>${order.id}</td>
+                                <td>${order.customers?.name || 'No customer'}</td>
+                                <td>${items}</td>
+                                <td>฿${order.total_amount}</td>
+                                <td>${order.status}</td>
+                            </tr>`;
+                        });
+                        
+                        html += '</table>';
+                        html += '<h4>Raw Data (First Order):</h4>';
+                        html += `<pre>${JSON.stringify(data[0], null, 2)}</pre>`;
+                        
+                        result.innerHTML = html;
+                    }
+                }
+            } catch (e) {
+                log(`Exception: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Load orders simple (no joins)
+        async function loadOrdersSimple() {
+            const result = document.getElementById('ordersResult');
+            result.innerHTML = '<div class="info">กำลังโหลด...</div>';
+            
+            try {
+                log('Loading orders (simple)...');
+                
+                const { data, error } = await supabaseClient
+                    .from('orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) {
+                    log(`Simple orders error: ${error.message}`, 'error');
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                } else {
+                    log(`Found ${data?.length || 0} orders (simple)`);
+                    
+                    let html = `<div class="success">✅ พบ ${data.length} คำสั่งซื้อ (Simple Query)</div>`;
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+                    result.innerHTML = html;
+                }
+            } catch (e) {
+                log(`Exception: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Create test order
+        async function createTestOrder() {
+            const result = document.getElementById('createResult');
+            result.innerHTML = '<div class="info">กำลังสร้างคำสั่งซื้อทดสอบ...</div>';
+            
+            try {
+                log('Creating test order...');
+                
+                // First check if we have menu items
+                const { data: menuItems } = await supabaseClient
+                    .from('menu_items')
+                    .select('id, name, price')
+                    .limit(2);
+                
+                if (!menuItems || menuItems.length === 0) {
+                    result.innerHTML = '<div class="error">❌ ไม่พบเมนูในระบบ กรุณาเพิ่มเมนูก่อน</div>';
+                    return;
+                }
+                
+                // Create test customer
+                const testCustomer = {
+                    name: 'ทดสอบ ' + new Date().getTime(),
+                    phone: '099' + Math.floor(Math.random() * 10000000),
+                    dorm: 'หอ A',
+                    room: '101'
+                };
+                
+                const { data: customer, error: customerError } = await supabaseClient
+                    .from('customers')
+                    .insert([testCustomer])
+                    .select()
+                    .single();
+                
+                if (customerError) {
+                    throw new Error(`Customer error: ${customerError.message}`);
+                }
+                
+                // Create order
+                const testOrder = {
+                    order_number: 'TEST' + Date.now(),
+                    customer_id: customer.id,
+                    total_amount: menuItems.reduce((sum, item) => sum + item.price, 0),
+                    status: 'pending',
+                    payment_method: 'cash',
+                    delivery_dorm: testCustomer.dorm,
+                    delivery_room: testCustomer.room
+                };
+                
+                const { data: order, error: orderError } = await supabaseClient
+                    .from('orders')
+                    .insert([testOrder])
+                    .select()
+                    .single();
+                
+                if (orderError) {
+                    throw new Error(`Order error: ${orderError.message}`);
+                }
+                
+                // Create order items
+                const orderItems = menuItems.map(item => ({
+                    order_id: order.id,
+                    menu_item_id: item.id,
+                    quantity: 1,
+                    price: item.price,
+                    subtotal: item.price
+                }));
+                
+                const { error: itemsError } = await supabaseClient
+                    .from('order_items')
+                    .insert(orderItems);
+                
+                if (itemsError) {
+                    throw new Error(`Items error: ${itemsError.message}`);
+                }
+                
+                log('Test order created successfully!', 'success');
+                result.innerHTML = `
+                    <div class="success">
+                        ✅ สร้างคำสั่งซื้อทดสอบสำเร็จ!<br>
+                        Order ID: ${order.id}<br>
+                        Order Number: ${order.order_number}<br>
+                        Customer: ${customer.name}<br>
+                        Total: ฿${order.total_amount}
+                    </div>
+                `;
+                
+            } catch (e) {
+                log(`Create order error: ${e.message}`, 'error');
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Auto check connection on load
+        window.addEventListener('load', () => {
+            log('Page loaded');
+            checkConnection();
+        });
+    </script>
+</body>
+</html>

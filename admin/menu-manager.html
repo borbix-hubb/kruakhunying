@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>จัดการเมนู - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="../shared/styles/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        .menu-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+        
+        .menu-card {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+            overflow: hidden;
+        }
+        
+        .menu-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+        }
+        
+        .menu-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .menu-card .price {
+            font-size: 24px;
+            color: #FF6B35;
+            font-weight: bold;
+        }
+        
+        .menu-options {
+            margin: 15px 0;
+            padding: 15px;
+            background: #f5f5f5;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .option-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background: white;
+            border-radius: 5px;
+            margin-bottom: 5px;
+            border: 1px solid #e0e0e0;
+        }
+        
+        .option-item:last-child {
+            border-bottom: none;
+        }
+        
+        .option-price {
+            color: #333;
+            font-weight: 600;
+            font-size: 16px;
+            min-width: 60px;
+            text-align: right;
+            margin-right: 10px;
+        }
+        
+        .option-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .btn-add-option {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .btn-add-option:hover {
+            background: #45a049;
+        }
+        
+        .btn-delete-option {
+            background: #f44336;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .btn-edit-price {
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 4px 8px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: 'Prompt', sans-serif;
+            margin-right: 5px;
+        }
+        
+        .btn-edit-price:hover {
+            background: #1976D2;
+        }
+        
+        .btn-delete-option:hover {
+            background: #da190b;
+        }
+        
+        .add-option-form {
+            display: none;
+            margin-top: 15px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 10px;
+            border: 2px solid #FF6B35;
+            box-shadow: 0 2px 10px rgba(255, 107, 53, 0.1);
+        }
+        
+        .add-option-form.active {
+            display: block;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            align-items: center;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .form-row input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Prompt', sans-serif;
+            transition: border-color 0.3s;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .form-row input:focus {
+            outline: none;
+            border-color: #FF6B35;
+        }
+        
+        .form-row button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .btn-save {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: #ccc;
+            color: #333;
+        }
+        
+        /* Ensure all buttons use Prompt font */
+        button {
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        /* Modern inline edit styles */
+        .inline-edit-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .inline-edit-input {
+            display: none;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 10;
+            background: white;
+            border: 2px solid #FF6B35;
+            border-radius: 25px;
+            padding: 8px 16px;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.3);
+            width: 120px;
+            font-family: 'Prompt', sans-serif;
+            font-size: 14px;
+            text-align: center;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50%) translateX(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(-50%) translateX(0);
+            }
+        }
+        
+        .inline-edit-input:focus {
+            outline: none;
+            border-color: #FF8C42;
+            box-shadow: 0 4px 25px rgba(255, 107, 53, 0.4);
+        }
+        
+        .inline-edit-buttons {
+            display: none;
+            position: absolute;
+            right: -10px;
+            top: 100%;
+            margin-top: 5px;
+            z-index: 11;
+            animation: fadeIn 0.3s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .inline-edit-btn {
+            padding: 4px 12px;
+            border: none;
+            border-radius: 15px;
+            font-size: 12px;
+            cursor: pointer;
+            margin: 0 2px;
+            transition: all 0.2s;
+            font-family: 'Prompt', sans-serif;
+        }
+        
+        .inline-edit-save {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .inline-edit-save:hover {
+            background: #45a049;
+            transform: scale(1.05);
+        }
+        
+        .inline-edit-cancel {
+            background: #f0f0f0;
+            color: #666;
+        }
+        
+        .inline-edit-cancel:hover {
+            background: #e0e0e0;
+        }
+        
+        .option-price.editing {
+            opacity: 0.5;
+        }
+        
+        /* Tooltip style for showing current price */
+        .price-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #333;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-bottom: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+        
+        .price-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            border: 4px solid transparent;
+            border-top-color: #333;
+        }
+        
+        .inline-edit-wrapper:hover .price-tooltip {
+            opacity: 1;
+        }
+        
+        .category-section {
+            margin-bottom: 40px;
+        }
+        
+        .category-header {
+            background: #f0f0f0;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .category-header h2 {
+            margin: 0;
+            color: #333;
+        }
+        
+        .no-options {
+            color: #999;
+            font-style: italic;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>ครัวคุณหญิง</h2>
+                <p>จัดการเมนู</p>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="dashboard.html" class="nav-item">
+                    <i class="fas fa-arrow-left"></i>
+                    <span>กลับไปแดชบอร์ด</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Header -->
+            <header class="admin-header">
+                <h1>จัดการเมนูและตัวเลือกเนื้อสัตว์</h1>
+                <div class="header-actions">
+                    <button class="btn-primary" onclick="showAddMenuModal()">
+                        <i class="fas fa-plus"></i> เพิ่มเมนูใหม่
+                    </button>
+                </div>
+            </header>
+
+            <!-- Menu Categories -->
+            <div id="menuCategories"></div>
+        </main>
+    </div>
+
+    <!-- Add/Edit Menu Modal -->
+    <div class="modal" id="menuModal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2 id="modalTitle">เพิ่มเมนูใหม่</h2>
+                <button class="close-modal" onclick="closeMenuModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="menuForm" onsubmit="saveMenu(event)">
+                    <input type="hidden" name="menuId">
+                    <div class="form-group">
+                        <label>ชื่อเมนู</label>
+                        <input type="text" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>หมวดหมู่</label>
+                        <select name="category_id" required>
+                            <option value="1">อาหารจานเดียวแนะนำ</option>
+                            <option value="2">อาหารจานเดียว</option>
+                            <option value="3">อาหารประเภทเส้น</option>
+                            <option value="4">ประเภทกับข้าว</option>
+                            <option value="5">ประเภทยำ</option>
+                            <option value="6">ประเภทน้ำตก</option>
+                            <option value="7">ประเภทตำ</option>
+                            <option value="8">เมนูทานเล่น</option>
+                            <option value="9">เมนูเพิ่มเติม</option>
+                            <option value="10">ร้านน้ำ Sipit</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>ราคาพื้นฐาน</label>
+                        <input type="number" name="price" required min="0">
+                    </div>
+                    <div class="form-group">
+                        <label>คำอธิบาย</label>
+                        <textarea name="description" rows="3"></textarea>
+                    </div>
+                    <button type="submit" class="btn-primary">บันทึก</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../shared/config/supabase.js"></script>
+    <script src="../shared/scripts/admin-auth.js"></script>
+    <script>
+        let menuItems = [];
+        let menuOptions = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAdminAuth();
+            await loadMenuData();
+            
+            // Click outside to close inline edit
+            document.addEventListener('click', (e) => {
+                if (!e.target.closest('.inline-edit-wrapper') && !e.target.closest('.btn-edit-price')) {
+                    document.querySelectorAll('.inline-edit-input').forEach(input => {
+                        if (input.style.display === 'block') {
+                            const optionId = input.dataset.optionId;
+                            cancelInlineEdit(parseInt(optionId));
+                        }
+                    });
+                }
+            });
+        });
+
+        // Load all menu data
+        async function loadMenuData() {
+            try {
+                console.log('Loading menu data...');
+                
+                // Load menu items
+                const { data: items, error: itemsError } = await supabaseClient
+                    .from('menu_items')
+                    .select('*, menu_categories(*)')
+                    .order('category_id', { ascending: true })
+                    .order('name', { ascending: true });
+
+                if (itemsError) {
+                    console.error('Error loading menu items:', itemsError);
+                    throw itemsError;
+                }
+                
+                menuItems = items || [];
+                console.log('Loaded menu items:', menuItems.length);
+
+                // Load menu options - don't fail if table doesn't exist
+                try {
+                    const { data: options, error: optionsError } = await supabaseClient
+                        .from('menu_options')
+                        .select('*')
+                        .order('menu_item_id', { ascending: true })
+                        .order('option_name', { ascending: true });
+
+                    if (optionsError) {
+                        console.warn('Warning loading menu options:', optionsError);
+                        // Continue without options
+                        menuOptions = [];
+                    } else {
+                        menuOptions = options || [];
+                        console.log('Loaded menu options:', menuOptions.length);
+                    }
+                } catch (optError) {
+                    console.warn('Menu options table might not exist:', optError);
+                    menuOptions = [];
+                }
+
+                displayMenuByCategory();
+            } catch (error) {
+                console.error('Error loading menu data:', error);
+                alert('เกิดข้อผิดพลาดในการโหลดข้อมูล: ' + error.message);
+            }
+        }
+
+        // Display menu grouped by category
+        function displayMenuByCategory() {
+            const categoriesDiv = document.getElementById('menuCategories');
+            categoriesDiv.innerHTML = '';
+
+            console.log('Displaying menu items:', menuItems.length);
+
+            if (menuItems.length === 0) {
+                categoriesDiv.innerHTML = '<p style="text-align: center; padding: 40px; color: #999;">ไม่พบข้อมูลเมนู</p>';
+                return;
+            }
+
+            // Group menu items by category
+            const categories = {};
+            menuItems.forEach(item => {
+                const categoryName = item.menu_categories?.name || 'อื่นๆ';
+                if (!categories[categoryName]) {
+                    categories[categoryName] = [];
+                }
+                categories[categoryName].push(item);
+            });
+
+            // Display each category
+            Object.entries(categories).forEach(([categoryName, items]) => {
+                const categorySection = document.createElement('div');
+                categorySection.className = 'category-section';
+                
+                categorySection.innerHTML = `
+                    <div class="category-header">
+                        <h2>${categoryName}</h2>
+                    </div>
+                    <div class="menu-grid">
+                        ${items.map(item => createMenuCard(item)).join('')}
+                    </div>
+                `;
+                
+                categoriesDiv.appendChild(categorySection);
+            });
+        }
+
+        // Create menu card HTML
+        function createMenuCard(item) {
+            const itemOptions = menuOptions.filter(opt => opt.menu_item_id === item.id);
+            
+            return `
+                <div class="menu-card">
+                    <h3>${item.name}</h3>
+                    <p class="price">฿${item.price}</p>
+                    ${item.description ? `<p>${item.description}</p>` : ''}
+                    
+                    <div class="menu-options">
+                        <h4>ตัวเลือกเนื้อสัตว์:</h4>
+                        ${itemOptions.length > 0 ? `
+                            ${itemOptions.map(opt => `
+                                <div class="option-item">
+                                    <span style="flex: 1;">${opt.option_name}</span>
+                                    <div class="option-controls">
+                                        <div class="inline-edit-wrapper">
+                                            <span class="option-price" id="price-${opt.id}">
+                                                ฿${parseInt(item.price) + parseInt(opt.price_adjustment || 0)}
+                                            </span>
+                                            <input type="number" 
+                                                   class="inline-edit-input" 
+                                                   id="edit-${opt.id}" 
+                                                   value="${opt.price_adjustment || 0}"
+                                                   data-option-id="${opt.id}"
+                                                   data-base-price="${item.price}"
+                                                   onkeydown="handleEditKeydown(event, ${opt.id})">
+                                            <div class="inline-edit-buttons" id="buttons-${opt.id}">
+                                                <button class="inline-edit-btn inline-edit-save" onclick="saveInlineEdit(${opt.id})">
+                                                    <i class="fas fa-check"></i>
+                                                </button>
+                                                <button class="inline-edit-btn inline-edit-cancel" onclick="cancelInlineEdit(${opt.id})">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            </div>
+                                            <div class="price-tooltip">คลิกเพื่อแก้ไข</div>
+                                        </div>
+                                        <button class="btn-edit-price" onclick="startInlineEdit(${opt.id})" title="แก้ไขราคา">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn-delete-option" onclick="deleteOption(${opt.id})" title="ลบ">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        ` : '<p class="no-options">ยังไม่มีตัวเลือก</p>'}
+                    </div>
+                    
+                    <button class="btn-add-option" onclick="toggleAddOption(${item.id})">
+                        <i class="fas fa-plus"></i> เพิ่มตัวเลือก
+                    </button>
+                    
+                    <div class="add-option-form" id="optionForm${item.id}">
+                        <div class="form-row">
+                            <input type="text" id="optionName${item.id}" placeholder="ชื่อเนื้อสัตว์ (เช่น หมูกรอบ)" style="flex: 2;">
+                            <input type="number" id="optionPrice${item.id}" placeholder="ราคาเพิ่ม" min="0" value="0" style="flex: 1; max-width: 120px;">
+                        </div>
+                        <div class="form-row">
+                            <button class="btn-save" onclick="addOption(${item.id})">บันทึก</button>
+                            <button class="btn-cancel" onclick="toggleAddOption(${item.id})">ยกเลิก</button>
+                        </div>
+                    </div>
+                    
+                    <div class="option-controls">
+                        <button class="btn-primary" onclick="editMenu(${item.id})" style="margin-top: 10px;">
+                            <i class="fas fa-edit"></i> แก้ไขเมนู
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Toggle add option form
+        function toggleAddOption(menuId) {
+            const form = document.getElementById(`optionForm${menuId}`);
+            form.classList.toggle('active');
+            if (form.classList.contains('active')) {
+                document.getElementById(`optionName${menuId}`).value = '';
+                document.getElementById(`optionPrice${menuId}`).value = '0';
+            }
+        }
+
+        // Add new option
+        async function addOption(menuId) {
+            const name = document.getElementById(`optionName${menuId}`).value.trim();
+            const price = parseInt(document.getElementById(`optionPrice${menuId}`).value) || 0;
+
+            if (!name) {
+                alert('กรุณาใส่ชื่อเนื้อสัตว์');
+                return;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('menu_options')
+                    .insert({
+                        menu_item_id: menuId,
+                        option_name: name,
+                        price_adjustment: price
+                    });
+
+                if (error) throw error;
+
+                await loadMenuData();
+                alert('เพิ่มตัวเลือกเรียบร้อย');
+            } catch (error) {
+                console.error('Error adding option:', error);
+                alert('เกิดข้อผิดพลาดในการเพิ่มตัวเลือก');
+            }
+        }
+
+        // Start inline edit
+        function startInlineEdit(optionId) {
+            const input = document.getElementById(`edit-${optionId}`);
+            const buttons = document.getElementById(`buttons-${optionId}`);
+            const priceSpan = document.getElementById(`price-${optionId}`);
+            
+            // Hide all other edits
+            document.querySelectorAll('.inline-edit-input').forEach(inp => {
+                if (inp.id !== `edit-${optionId}`) {
+                    inp.style.display = 'none';
+                    document.getElementById(inp.id.replace('edit-', 'buttons-')).style.display = 'none';
+                    document.getElementById(inp.id.replace('edit-', 'price-')).classList.remove('editing');
+                }
+            });
+            
+            // Show this edit
+            input.style.display = 'block';
+            buttons.style.display = 'block';
+            priceSpan.classList.add('editing');
+            input.focus();
+            input.select();
+        }
+        
+        // Handle keydown in edit input
+        function handleEditKeydown(event, optionId) {
+            if (event.key === 'Enter') {
+                saveInlineEdit(optionId);
+            } else if (event.key === 'Escape') {
+                cancelInlineEdit(optionId);
+            }
+        }
+        
+        // Save inline edit
+        async function saveInlineEdit(optionId) {
+            const input = document.getElementById(`edit-${optionId}`);
+            const adjustment = parseInt(input.value) || 0;
+            
+            if (adjustment < 0) {
+                // Animate error
+                input.style.animation = 'shake 0.3s';
+                setTimeout(() => input.style.animation = '', 300);
+                return;
+            }
+            
+            try {
+                const { error } = await supabaseClient
+                    .from('menu_options')
+                    .update({ price_adjustment: adjustment })
+                    .eq('id', optionId);
+                
+                if (error) throw error;
+                
+                // Update local data
+                const option = menuOptions.find(opt => opt.id === optionId);
+                if (option) {
+                    option.price_adjustment = adjustment;
+                }
+                
+                // Update price display
+                const basePrice = parseInt(input.dataset.basePrice);
+                const priceSpan = document.getElementById(`price-${optionId}`);
+                priceSpan.textContent = `฿${basePrice + adjustment}`;
+                
+                // Animate success
+                priceSpan.style.animation = 'pulse 0.5s';
+                setTimeout(() => {
+                    priceSpan.style.animation = '';
+                    cancelInlineEdit(optionId);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error updating option price:', error);
+                input.style.animation = 'shake 0.3s';
+                setTimeout(() => input.style.animation = '', 300);
+            }
+        }
+        
+        // Cancel inline edit
+        function cancelInlineEdit(optionId) {
+            const input = document.getElementById(`edit-${optionId}`);
+            const buttons = document.getElementById(`buttons-${optionId}`);
+            const priceSpan = document.getElementById(`price-${optionId}`);
+            
+            input.style.display = 'none';
+            buttons.style.display = 'none';
+            priceSpan.classList.remove('editing');
+            
+            // Reset value
+            const option = menuOptions.find(opt => opt.id === optionId);
+            if (option) {
+                input.value = option.price_adjustment || 0;
+            }
+        }
+        
+        // Add shake animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                25% { transform: translateX(-5px); }
+                75% { transform: translateX(5px); }
+            }
+            @keyframes pulse {
+                0% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+                100% { transform: scale(1); }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Delete option
+        async function deleteOption(optionId) {
+            if (!confirm('ต้องการลบตัวเลือกนี้หรือไม่?')) return;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('menu_options')
+                    .delete()
+                    .eq('id', optionId);
+
+                if (error) throw error;
+
+                await loadMenuData();
+            } catch (error) {
+                console.error('Error deleting option:', error);
+                alert('เกิดข้อผิดพลาดในการลบตัวเลือก');
+            }
+        }
+
+        // Show add menu modal
+        function showAddMenuModal() {
+            document.getElementById('modalTitle').textContent = 'เพิ่มเมนูใหม่';
+            document.getElementById('menuForm').reset();
+            document.querySelector('[name="menuId"]').value = '';
+            document.getElementById('menuModal').classList.add('active');
+        }
+
+        // Edit menu
+        async function editMenu(menuId) {
+            const menu = menuItems.find(m => m.id === menuId);
+            if (!menu) return;
+
+            document.getElementById('modalTitle').textContent = 'แก้ไขเมนู';
+            document.querySelector('[name="menuId"]').value = menu.id;
+            document.querySelector('[name="name"]').value = menu.name;
+            document.querySelector('[name="category_id"]').value = menu.category_id;
+            document.querySelector('[name="price"]').value = menu.price;
+            document.querySelector('[name="description"]').value = menu.description || '';
+            
+            document.getElementById('menuModal').classList.add('active');
+        }
+
+        // Save menu (add or update)
+        async function saveMenu(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            const menuId = formData.get('menuId');
+            const menuData = {
+                name: formData.get('name'),
+                category_id: parseInt(formData.get('category_id')),
+                price: parseInt(formData.get('price')),
+                description: formData.get('description'),
+                is_available: true
+            };
+
+            try {
+                if (menuId) {
+                    // Update existing menu
+                    const { error } = await supabaseClient
+                        .from('menu_items')
+                        .update(menuData)
+                        .eq('id', menuId);
+                    
+                    if (error) throw error;
+                } else {
+                    // Add new menu
+                    const { error } = await supabaseClient
+                        .from('menu_items')
+                        .insert(menuData);
+                    
+                    if (error) throw error;
+                }
+
+                closeMenuModal();
+                await loadMenuData();
+                alert(menuId ? 'แก้ไขเมนูเรียบร้อย' : 'เพิ่มเมนูเรียบร้อย');
+            } catch (error) {
+                console.error('Error saving menu:', error);
+                alert('เกิดข้อผิดพลาดในการบันทึก');
+            }
+        }
+
+        // Close menu modal
+        function closeMenuModal() {
+            document.getElementById('menuModal').classList.remove('active');
+        }
+
+        // Check admin authentication
+        async function checkAdminAuth() {
+            try {
+                const user = await getCurrentSession();
+                if (!user) {
+                    window.location.href = 'login.html';
+                }
+            } catch (error) {
+                console.error('Auth error:', error);
+                window.location.href = 'login.html';
+            }
+        }
+    </script>
+</body>
+</html>

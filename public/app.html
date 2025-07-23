@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>สั่งอาหาร - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="../shared/styles/app.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+</head>
+<body>
+    <div class="app-container">
+        <!-- App Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <h1>ครัวคุณหญิง</h1>
+                <div class="header-actions">
+                    <button class="cart-btn" onclick="toggleCart()">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Category Tabs -->
+        <div class="category-tabs">
+            <button class="tab active" onclick="filterCategory('all')">ทั้งหมด</button>
+            <button class="tab" onclick="filterCategory('rice')">ข้าว</button>
+            <button class="tab" onclick="filterCategory('noodle')">เส้น</button>
+            <button class="tab" onclick="filterCategory('sidedish')">กับข้าว</button>
+            <button class="tab" onclick="filterCategory('salad')">ยำ</button>
+            <button class="tab" onclick="filterCategory('grill')">น้ำตก</button>
+            <button class="tab" onclick="filterCategory('papaya')">ตำ</button>
+            <button class="tab" onclick="filterCategory('snack')">ทานเล่น</button>
+            <button class="tab" onclick="filterCategory('drinks')">เครื่องดื่ม</button>
+        </div>
+
+        <!-- Search Bar -->
+        <div class="search-container">
+            <input type="text" class="search-input" placeholder="ค้นหาเมนู..." id="searchInput">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+
+        <!-- Menu Grid -->
+        <main class="menu-container" id="menuContainer">
+            <!-- Menu items will be dynamically loaded here -->
+        </main>
+
+        <!-- Cart Sidebar -->
+        <div class="cart-sidebar" id="cartSidebar">
+            <div class="cart-header">
+                <h2>ตะกร้า</h2>
+                <button class="close-cart" onclick="toggleCart()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="cart-items" id="cartItems">
+                <p class="empty-cart">ยังไม่มีสินค้าในตะกร้า</p>
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>รวม:</span>
+                    <span id="cartTotal">฿0</span>
+                </div>
+                <button class="checkout-btn" onclick="checkout()">
+                    <i class="fas fa-paper-plane"></i> สั่งอาหาร
+                </button>
+            </div>
+        </div>
+
+        <!-- Order Modal -->
+        <div class="modal" id="orderModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>ข้อมูลการจัดส่ง</h2>
+                    <button class="close-modal" onclick="closeOrderModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Address Selection -->
+                    <div id="addressSelection" class="address-selection">
+                        <h4>เลือกที่อยู่จัดส่ง</h4>
+                        <div class="address-options">
+                            <button type="button" class="address-option" onclick="useSavedAddress()">
+                                <i class="fas fa-home"></i>
+                                <span>ใช้ที่อยู่เดิม</span>
+                            </button>
+                            <button type="button" class="address-option" onclick="useNewAddress()">
+                                <i class="fas fa-plus-circle"></i>
+                                <span>ใช้ที่อยู่ใหม่</span>
+                            </button>
+                        </div>
+                        <div id="savedAddressInfo" class="saved-address-info" style="display: none;">
+                            <!-- Saved address will be shown here -->
+                        </div>
+                    </div>
+                    
+                    <form id="orderForm" onsubmit="submitOrder(event)">
+                        <div class="form-group">
+                            <label>ชื่อ</label>
+                            <input type="text" name="name" required>
+                        </div>
+                    <div class="form-group">
+                        <label>เบอร์โทร</label>
+                        <input type="tel" name="phone" required>
+                    </div>
+                    <div class="form-group">
+                        <label>ตึก</label>
+                        <select name="dorm" required onchange="checkOtherBuilding(this)">
+                            <option value="">เลือกตึก</option>
+                            <option value="building-1">ตึก 1</option>
+                            <option value="building-a">ตึก A</option>
+                            <option value="building-b">ตึก B</option>
+                            <option value="building-3">ตึก 3</option>
+                            <option value="other">อื่นๆ (ระบุในหมายเหตุ)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>เลขห้อง</label>
+                        <input type="text" name="room" required>
+                    </div>
+                    <div class="form-group">
+                        <label>หมายเหตุ <span id="noteRequired" style="color: red; display: none;">*</span></label>
+                        <textarea name="note" rows="3" placeholder="ระบุที่อยู่หรือรายละเอียดเพิ่มเติม"></textarea>
+                    </div>
+                        <button type="submit" class="submit-order-btn">
+                            ยืนยันคำสั่งซื้อ
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Item Detail Modal -->
+        <div class="modal" id="itemModal">
+            <div class="modal-content item-modal">
+                <button class="close-modal" onclick="closeItemModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+                <div class="item-detail" id="itemDetail">
+                    <!-- Item details will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Summary Modal -->
+        <div class="modal" id="orderSummaryModal">
+            <div class="modal-content order-summary-modal">
+                <div class="modal-header">
+                    <h2>สรุปคำสั่งซื้อ</h2>
+                    <button class="close-modal" onclick="closeOrderSummary()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="order-summary-content" id="orderSummaryContent">
+                    <!-- Order summary will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../shared/config/supabase.js"></script>
+    <script src="../shared/api/menu.js"></script>
+    <script src="../shared/api/orders.js"></script>
+    <script src="../shared/scripts/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Admin - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="../shared/styles/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #FFF8F3 0%, #FFE5D9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .setup-container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(255,107,53,0.2);
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .setup-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .setup-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .setup-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+        
+        .form-group input {
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .setup-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .setup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,107,53,0.3);
+        }
+        
+        .setup-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+        }
+        
+        .message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+        
+        .info-box {
+            background: var(--light-color);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .info-box h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="setup-container">
+        <div class="setup-header">
+            <h1>สร้าง Admin Account</h1>
+            <p>สร้างบัญชีผู้ดูแลระบบครั้งแรก</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>⚠️ สำคัญ</h3>
+            <p>ใช้หน้านี้เพียงครั้งเดียวเพื่อสร้าง Admin คนแรก</p>
+            <p>หลังจากนั้นให้ใช้ Dashboard เพื่อจัดการ Admin อื่นๆ</p>
+        </div>
+        
+        <form class="setup-form" id="setupForm" onsubmit="handleSetup(event)">
+            <div class="message" id="message"></div>
+            
+            <div class="form-group">
+                <label>อีเมล</label>
+                <input type="email" id="email" value="borbixz@gmail.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label>รหัสผ่าน</label>
+                <input type="password" id="password" placeholder="อย่างน้อย 6 ตัวอักษร" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label>ชื่อผู้ดูแลระบบ</label>
+                <input type="text" id="name" value="Admin" required>
+            </div>
+            
+            <button type="submit" class="setup-btn" id="setupBtn">
+                <i class="fas fa-user-plus"></i> สร้าง Admin Account
+            </button>
+        </form>
+        
+        <div class="back-link" style="text-align: center; margin-top: 2rem;">
+            <a href="./login.html" style="color: var(--primary-color); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> ไปหน้า Login
+            </a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../shared/config/supabase.js"></script>
+    <script src="../shared/api/auth.js"></script>
+    <script>
+        // Wait for all scripts to load
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('Checking Supabase...', window.supabaseClient);
+        });
+        
+        async function handleSetup(event) {
+            event.preventDefault();
+            
+            const btn = document.getElementById('setupBtn');
+            const message = document.getElementById('message');
+            
+            // Get form values
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const name = document.getElementById('name').value;
+            
+            // Disable button
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลังสร้าง...';
+            
+            try {
+                const result = await createFirstAdmin(email, password, name);
+                
+                if (result.success) {
+                    message.className = 'message success';
+                    message.innerHTML = `
+                        ✅ สร้าง Admin สำเร็จ!<br>
+                        Email: ${email}<br>
+                        Password: ${password}<br>
+                        <strong>จดรหัสผ่านไว้!</strong>
+                    `;
+                    
+                    setTimeout(() => {
+                        window.location.href = './login.html';
+                    }, 5000);
+                } else {
+                    throw new Error(result.error);
+                }
+            } catch (error) {
+                message.className = 'message error';
+                message.textContent = '❌ Error: ' + error.message;
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-user-plus"></i> สร้าง Admin Account';
+            }
+        }
+    </script>
+</body>
+</html>

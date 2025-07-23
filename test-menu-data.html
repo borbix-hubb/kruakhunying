@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบข้อมูลเมนู - ครัวคุณหญิง</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+            margin: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #FF6B35;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            color: #ef6c00;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #FF6B35;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: 'Prompt', sans-serif;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #e55a2b;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+            font-weight: 600;
+        }
+        .menu-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .menu-item h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #FF6B35;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 ทดสอบข้อมูลเมนูและ Supabase Connection</h1>
+        
+        <div class="test-section">
+            <h2>1. ตรวจสอบการเชื่อมต่อ Supabase</h2>
+            <button onclick="testConnection()">Test Connection</button>
+            <div id="connectionResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. ตรวจสอบตาราง menu_categories</h2>
+            <button onclick="checkCategories()">Check Categories</button>
+            <div id="categoriesResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. ตรวจสอบตาราง menu_items</h2>
+            <button onclick="checkMenuItems()">Check Menu Items</button>
+            <div id="menuItemsResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>4. ตรวจสอบตาราง menu_options</h2>
+            <button onclick="checkMenuOptions()">Check Menu Options</button>
+            <div id="menuOptionsResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>5. ทดสอบ Query แบบ Menu Manager</h2>
+            <button onclick="testMenuManagerQuery()">Test Full Query</button>
+            <div id="fullQueryResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>6. เพิ่มข้อมูลทดสอบ</h2>
+            <button onclick="addTestData()">Add Test Menu Items</button>
+            <div id="addDataResult"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        
+        async function testConnection() {
+            const result = document.getElementById('connectionResult');
+            result.innerHTML = '<div class="loading"><div class="spinner"></div>Testing connection...</div>';
+            
+            try {
+                // Test with a simple query
+                const { data, error } = await supabase
+                    .from('menu_categories')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">❌ Connection Error: ${error.message}<br>
+                    <strong>Details:</strong> ${error.details || 'No details available'}<br>
+                    <strong>Hint:</strong> ${error.hint || 'Check your Supabase configuration'}</div>`;
+                } else {
+                    result.innerHTML = '<div class="success">✅ Connected to Supabase successfully!</div>';
+                    
+                    // Show Supabase URL
+                    result.innerHTML += `<div class="info">
+                        <strong>Supabase URL:</strong> ${supabase.supabaseUrl}<br>
+                        <strong>Status:</strong> Active
+                    </div>`;
+                }
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Exception: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkCategories() {
+            const result = document.getElementById('categoriesResult');
+            result.innerHTML = '<div class="loading"><div class="spinner"></div>Loading categories...</div>';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('menu_categories')
+                    .select('*')
+                    .order('id');
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    result.innerHTML = `<div class="warning">⚠️ ไม่พบข้อมูลหมวดหมู่ในระบบ</div>
+                    <div class="info">💡 คลิกปุ่ม "Add Test Menu Items" เพื่อเพิ่มข้อมูลทดสอบ</div>`;
+                    return;
+                }
+                
+                result.innerHTML = `<div class="success">✅ พบ ${data.length} หมวดหมู่</div>`;
+                
+                let html = '<table><tr><th>ID</th><th>Name</th><th>Slug</th><th>Created</th></tr>';
+                data.forEach(cat => {
+                    html += `<tr>
+                        <td>${cat.id}</td>
+                        <td>${cat.name}</td>
+                        <td>${cat.slug}</td>
+                        <td>${new Date(cat.created_at).toLocaleString('th-TH')}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                
+                result.innerHTML += html;
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Exception: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkMenuItems() {
+            const result = document.getElementById('menuItemsResult');
+            result.innerHTML = '<div class="loading"><div class="spinner"></div>Loading menu items...</div>';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('menu_items')
+                    .select('*, menu_categories(name)')
+                    .order('category_id')
+                    .order('name');
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    result.innerHTML = `<div class="warning">⚠️ ไม่พบข้อมูลเมนูในระบบ</div>
+                    <div class="info">💡 คลิกปุ่ม "Add Test Menu Items" เพื่อเพิ่มข้อมูลทดสอบ</div>`;
+                    return;
+                }
+                
+                result.innerHTML = `<div class="success">✅ พบ ${data.length} เมนู</div>`;
+                
+                // Group by category
+                const categories = {};
+                data.forEach(item => {
+                    const catName = item.menu_categories?.name || 'ไม่มีหมวดหมู่';
+                    if (!categories[catName]) categories[catName] = [];
+                    categories[catName].push(item);
+                });
+                
+                Object.entries(categories).forEach(([catName, items]) => {
+                    result.innerHTML += `<h3 style="margin-top: 20px;">${catName} (${items.length} รายการ)</h3>`;
+                    items.forEach(item => {
+                        result.innerHTML += `
+                        <div class="menu-item">
+                            <h4>${item.name} - ฿${item.price}</h4>
+                            ${item.description ? `<p>${item.description}</p>` : ''}
+                            <small>
+                                Available: ${item.is_available ? '✅' : '❌'} | 
+                                Popular: ${item.is_popular ? '⭐' : '-'} | 
+                                Recommended: ${item.is_recommended ? '👍' : '-'}
+                            </small>
+                        </div>`;
+                    });
+                });
+                
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Exception: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkMenuOptions() {
+            const result = document.getElementById('menuOptionsResult');
+            result.innerHTML = '<div class="loading"><div class="spinner"></div>Checking menu_options table...</div>';
+            
+            try {
+                // First check if table exists
+                const { data: tableCheck, error: tableError } = await supabase
+                    .rpc('to_regclass', { rel_name: 'public.menu_options' });
+                
+                if (!tableCheck) {
+                    result.innerHTML = `<div class="warning">⚠️ ตาราง menu_options ยังไม่ถูกสร้าง</div>
+                    <div class="info">💡 รัน SQL script: database/safe-create-menu-options.sql ใน Supabase SQL Editor</div>`;
+                    return;
+                }
+                
+                // If table exists, get data
+                const { data, error } = await supabase
+                    .from('menu_options')
+                    .select('*, menu_items(name)')
+                    .order('menu_item_id')
+                    .order('option_name');
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+                    return;
+                }
+                
+                if (!data || data.length === 0) {
+                    result.innerHTML = `<div class="info">ℹ️ ตาราง menu_options มีอยู่แล้ว แต่ยังไม่มีข้อมูล</div>`;
+                    return;
+                }
+                
+                result.innerHTML = `<div class="success">✅ พบ ${data.length} ตัวเลือกเมนู</div>`;
+                
+                let html = '<table><tr><th>Menu Item</th><th>Option Name</th><th>Price Adjustment</th><th>Available</th></tr>';
+                data.forEach(opt => {
+                    html += `<tr>
+                        <td>${opt.menu_items?.name || 'Unknown'}</td>
+                        <td>${opt.option_name}</td>
+                        <td>${opt.price_adjustment > 0 ? `+฿${opt.price_adjustment}` : 'ราคาปกติ'}</td>
+                        <td>${opt.is_available ? '✅' : '❌'}</td>
+                    </tr>`;
+                });
+                html += '</table>';
+                
+                result.innerHTML += html;
+                
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Exception: ${e.message}<br>
+                <strong>Note:</strong> ตาราง menu_options อาจยังไม่ถูกสร้าง</div>`;
+            }
+        }
+        
+        async function testMenuManagerQuery() {
+            const result = document.getElementById('fullQueryResult');
+            result.innerHTML = '<div class="loading"><div class="spinner"></div>Testing full menu query...</div>';
+            
+            try {
+                // Query exactly like menu manager
+                const { data: menuItems, error: menuError } = await supabase
+                    .from('menu_items')
+                    .select('*, menu_categories(name)')
+                    .order('category_id', { ascending: true })
+                    .order('name', { ascending: true });
+                
+                if (menuError) {
+                    result.innerHTML = `<div class="error">❌ Menu Items Error: ${menuError.message}</div>`;
+                    return;
+                }
+                
+                // Try to get menu options
+                let menuOptions = [];
+                try {
+                    const { data: options, error: optionsError } = await supabase
+                        .from('menu_options')
+                        .select('*')
+                        .order('menu_item_id', { ascending: true })
+                        .order('option_name', { ascending: true });
+                    
+                    if (!optionsError) {
+                        menuOptions = options || [];
+                    }
+                } catch (e) {
+                    console.log('Menu options not available');
+                }
+                
+                result.innerHTML = `
+                    <div class="success">✅ Query Results:</div>
+                    <div class="info">
+                        <strong>Menu Items:</strong> ${menuItems.length} items<br>
+                        <strong>Menu Options:</strong> ${menuOptions.length} options<br>
+                        <strong>Status:</strong> ${menuItems.length > 0 ? 'Data available' : 'No data found'}
+                    </div>
+                `;
+                
+                if (menuItems.length === 0) {
+                    result.innerHTML += `<div class="warning">⚠️ ไม่มีข้อมูลเมนูในระบบ - หน้าจัดการเมนูจะแสดงหน้าว่าง</div>`;
+                } else {
+                    result.innerHTML += `<div class="info">✅ ข้อมูลพร้อมแสดงในหน้าจัดการเมนู</div>`;
+                }
+                
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Exception: ${e.message}</div>`;
+            }
+        }
+        
+        async function addTestData() {
+            const result = document.getElementById('addDataResult');
+            result.innerHTML = '<div class="loading"><div class="spinner"></div>Adding test data...</div>';
+            
+            try {
+                // First, ensure categories exist
+                const categories = [
+                    { name: 'อาหารจานเดียว', slug: 'single-dishes' },
+                    { name: 'ก๋วยเตี๋ยว', slug: 'noodles' },
+                    { name: 'กับข้าว', slug: 'side-dishes' }
+                ];
+                
+                for (const cat of categories) {
+                    const { error } = await supabase
+                        .from('menu_categories')
+                        .upsert(cat, { onConflict: 'slug' });
+                    
+                    if (error && !error.message.includes('duplicate')) {
+                        throw error;
+                    }
+                }
+                
+                // Get category IDs
+                const { data: cats } = await supabase
+                    .from('menu_categories')
+                    .select('id, slug');
+                
+                const catMap = {};
+                cats.forEach(c => catMap[c.slug] = c.id);
+                
+                // Add test menu items
+                const menuItems = [
+                    {
+                        name: 'ข้าวผัดกุ้ง',
+                        description: 'ข้าวผัดกุ้งสดใหม่ หอมกระเทียม',
+                        price: 60,
+                        category_id: catMap['single-dishes'],
+                        is_popular: true,
+                        is_recommended: true,
+                        is_available: true
+                    },
+                    {
+                        name: 'ผัดกะเพราหมูสับ',
+                        description: 'ผัดกะเพราหอมๆ พร้อมไข่ดาว',
+                        price: 50,
+                        category_id: catMap['single-dishes'],
+                        is_hot: true,
+                        is_available: true
+                    },
+                    {
+                        name: 'ก๋วยเตี๋ยวต้มยำ',
+                        description: 'ต้มยำน้ำข้น รสจัดจ้าน',
+                        price: 45,
+                        category_id: catMap['noodles'],
+                        is_hot: true,
+                        is_available: true
+                    }
+                ];
+                
+                let addedCount = 0;
+                for (const item of menuItems) {
+                    const { error } = await supabase
+                        .from('menu_items')
+                        .insert([item]);
+                    
+                    if (!error) {
+                        addedCount++;
+                    } else if (!error.message.includes('duplicate')) {
+                        console.error('Error adding item:', error);
+                    }
+                }
+                
+                result.innerHTML = `
+                    <div class="success">✅ เพิ่มข้อมูลทดสอบสำเร็จ!</div>
+                    <div class="info">
+                        <strong>หมวดหมู่:</strong> ${categories.length} หมวด<br>
+                        <strong>เมนูอาหาร:</strong> ${addedCount} รายการ<br>
+                        <br>
+                        🔄 <strong>กลับไปที่หน้าจัดการเมนูและ Refresh (F5)</strong>
+                    </div>
+                `;
+                
+                // Auto refresh other tests
+                setTimeout(() => {
+                    checkCategories();
+                    checkMenuItems();
+                }, 1000);
+                
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Auto test connection on load
+        window.addEventListener('load', () => {
+            testConnection();
+        });
+    </script>
+</body>
+</html>

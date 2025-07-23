@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Login & Fix - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="../shared/styles/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #FFF8F3 0%, #FFE5D9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(255,107,53,0.2);
+            width: 100%;
+            max-width: 500px;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .step {
+            background: #f5f5f5;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+        
+        .step h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+        
+        .btn {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 0.5rem;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,107,53,0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 1rem;
+            display: none;
+        }
+        
+        .message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+        
+        .message.info {
+            background: #e3f2fd;
+            color: #1976d2;
+            display: block;
+        }
+        
+        .status {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Login & สร้าง Admin</h1>
+            <p>ขั้นตอนเดียวจบ ทุกอย่าง</p>
+        </div>
+        
+        <div class="status" id="status">
+            <strong>สถานะ:</strong> <span id="statusText">รอดำเนินการ</span>
+        </div>
+        
+        <div class="message" id="message"></div>
+        
+        <div class="step">
+            <h3>ขั้นตอนที่ 1: Login</h3>
+            <form id="loginForm" onsubmit="handleQuickLogin(event)">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="email" value="borbixz@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Password</label>
+                    <input type="password" id="password" placeholder="รหัสผ่านของคุณ" required>
+                </div>
+                <button type="submit" class="btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Login & สร้าง Admin
+                </button>
+            </form>
+        </div>
+        
+        <div class="step" id="step2" style="display: none;">
+            <h3>ขั้นตอนที่ 2: กำลังสร้าง Admin</h3>
+            <p>กำลังดำเนินการ...</p>
+        </div>
+        
+        <div style="text-align: center; margin-top: 2rem;">
+            <a href="./login.html" style="color: var(--primary-color); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> กลับไปหน้า Login ปกติ
+            </a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../shared/config/supabase.js"></script>
+    <script>
+        async function handleQuickLogin(event) {
+            event.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const message = document.getElementById('message');
+            const statusText = document.getElementById('statusText');
+            const loginBtn = document.getElementById('loginBtn');
+            const step2 = document.getElementById('step2');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> กำลัง Login...';
+            
+            try {
+                // Step 1: Login
+                statusText.textContent = 'กำลัง Login...';
+                const { data: loginData, error: loginError } = await window.supabaseClient.auth.signInWithPassword({
+                    email,
+                    password
+                });
+                
+                if (loginError) throw loginError;
+                
+                message.className = 'message success';
+                message.textContent = '✅ Login สำเร็จ!';
+                step2.style.display = 'block';
+                
+                // Step 2: Check/Create Admin
+                statusText.textContent = 'กำลังตรวจสอบสิทธิ์ Admin...';
+                
+                // Check if admin exists
+                const { data: existingAdmin, error: checkError } = await window.supabaseClient
+                    .from('admin_users')
+                    .select('*')
+                    .eq('email', email)
+                    .maybeSingle();
+                
+                if (existingAdmin) {
+                    // Update existing admin
+                    const { error: updateError } = await window.supabaseClient
+                        .from('admin_users')
+                        .update({ 
+                            is_active: true,
+                            last_login: new Date().toISOString()
+                        })
+                        .eq('email', email);
+                    
+                    if (updateError) throw updateError;
+                    
+                    message.textContent = '✅ Login และอัพเดท Admin สำเร็จ!';
+                } else {
+                    // Create new admin
+                    const { error: insertError } = await window.supabaseClient
+                        .from('admin_users')
+                        .insert([{
+                            email: email,
+                            password_hash: 'managed_by_supabase_auth',
+                            name: email.split('@')[0],
+                            role: 'super_admin',
+                            is_active: true
+                        }]);
+                    
+                    if (insertError) {
+                        // If RLS error, show instructions
+                        if (insertError.message.includes('row-level security')) {
+                            message.className = 'message error';
+                            message.innerHTML = `
+                                ❌ ไม่สามารถสร้าง Admin ได้เนื่องจาก RLS Policy<br>
+                                <strong>วิธีแก้:</strong><br>
+                                1. ไปที่ Supabase Dashboard > SQL Editor<br>
+                                2. รันไฟล์ database/fix-rls-admin.sql<br>
+                                3. กลับมา login ใหม่อีกครั้ง
+                            `;
+                            statusText.textContent = 'ต้องแก้ไข RLS Policy ก่อน';
+                            loginBtn.disabled = false;
+                            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login & สร้าง Admin';
+                            return;
+                        }
+                        throw insertError;
+                    }
+                    
+                    message.textContent = '✅ Login และสร้าง Admin ใหม่สำเร็จ!';
+                }
+                
+                statusText.textContent = 'เสร็จสิ้น! กำลังไป Dashboard...';
+                
+                // Redirect to dashboard
+                setTimeout(() => {
+                    window.location.href = './dashboard.html';
+                }, 2000);
+                
+            } catch (error) {
+                message.className = 'message error';
+                message.textContent = '❌ Error: ' + error.message;
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login & สร้าง Admin';
+                statusText.textContent = 'เกิดข้อผิดพลาด';
+            }
+        }
+        
+        // Check if already logged in
+        window.addEventListener('DOMContentLoaded', async () => {
+            const { data: { session } } = await window.supabaseClient.auth.getSession();
+            if (session) {
+                document.getElementById('message').className = 'message info';
+                document.getElementById('message').textContent = 'ℹ️ คุณ Login อยู่แล้ว กำลังตรวจสอบสิทธิ์...';
+                
+                // Check admin status
+                const { data: admin } = await window.supabaseClient
+                    .from('admin_users')
+                    .select('*')
+                    .eq('email', session.user.email)
+                    .eq('is_active', true)
+                    .maybeSingle();
+                
+                if (admin) {
+                    window.location.href = './dashboard.html';
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ทดสอบข้อมูล Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e91e63;
+            text-align: center;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 1px solid #e0e0e0;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-family: 'Prompt', sans-serif;
+        }
+        button:hover {
+            background: #d81b60;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background: #f5f5f5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 ทดสอบข้อมูลสำหรับ Dashboard</h1>
+        
+        <div class="test-section">
+            <h2>1. ตรวจสอบการเชื่อมต่อ</h2>
+            <button onclick="testConnection()">Test Connection</button>
+            <div id="connectionResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>2. ตรวจสอบตาราง</h2>
+            <button onclick="checkTables()">Check All Tables</button>
+            <div id="tablesResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>3. ตรวจสอบข้อมูลในแต่ละตาราง</h2>
+            <button onclick="checkMenuCategories()">Menu Categories</button>
+            <button onclick="checkMenuItems()">Menu Items</button>
+            <button onclick="checkOrders()">Orders</button>
+            <button onclick="checkCustomers()">Customers</button>
+            <div id="dataResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>4. ทดสอบ Query แบบ Dashboard</h2>
+            <button onclick="testDashboardQuery()">Test Dashboard Query</button>
+            <div id="dashboardResult"></div>
+        </div>
+        
+        <div class="test-section">
+            <h2>5. สร้างข้อมูลทดสอบ</h2>
+            <button onclick="createCompleteTestData()">สร้าง Order พร้อม Customer และ Items</button>
+            <div id="createResult"></div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        
+        async function testConnection() {
+            const result = document.getElementById('connectionResult');
+            result.innerHTML = '<div class="info">Testing...</div>';
+            
+            try {
+                // Simple test query
+                const { data, error } = await supabase
+                    .from('menu_categories')
+                    .select('count')
+                    .limit(1);
+                
+                if (error) {
+                    result.innerHTML = `<div class="error">❌ Connection Error: ${error.message}</div>`;
+                } else {
+                    result.innerHTML = '<div class="success">✅ Connected to Supabase!</div>';
+                }
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Exception: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkTables() {
+            const result = document.getElementById('tablesResult');
+            result.innerHTML = '<div class="info">Checking tables...</div>';
+            
+            const tables = [
+                'menu_categories',
+                'menu_items',
+                'customers',
+                'orders',
+                'order_items',
+                'admin_users'
+            ];
+            
+            let html = '<table><tr><th>Table</th><th>Status</th><th>Count</th></tr>';
+            
+            for (const table of tables) {
+                try {
+                    const { count, error } = await supabase
+                        .from(table)
+                        .select('*', { count: 'exact', head: true });
+                    
+                    if (error) {
+                        html += `<tr><td>${table}</td><td class="error">❌ ${error.message}</td><td>-</td></tr>`;
+                    } else {
+                        html += `<tr><td>${table}</td><td class="success">✅ OK</td><td>${count || 0}</td></tr>`;
+                    }
+                } catch (e) {
+                    html += `<tr><td>${table}</td><td class="error">❌ ${e.message}</td><td>-</td></tr>`;
+                }
+            }
+            
+            html += '</table>';
+            result.innerHTML = html;
+        }
+        
+        async function checkMenuCategories() {
+            const result = document.getElementById('dataResult');
+            try {
+                const { data, error } = await supabase
+                    .from('menu_categories')
+                    .select('*');
+                
+                if (error) throw error;
+                
+                result.innerHTML = `
+                    <div class="success">✅ Menu Categories (${data.length})</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkMenuItems() {
+            const result = document.getElementById('dataResult');
+            try {
+                const { data, error } = await supabase
+                    .from('menu_items')
+                    .select('*, menu_categories(name)')
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                result.innerHTML = `
+                    <div class="success">✅ Menu Items (showing 5 of total)</div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkOrders() {
+            const result = document.getElementById('dataResult');
+            try {
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select('*')
+                    .order('created_at', { ascending: false })
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                result.innerHTML = `
+                    <div class="${data.length > 0 ? 'success' : 'info'}">
+                        ${data.length > 0 ? '✅' : 'ℹ️'} Orders (${data.length})
+                    </div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function checkCustomers() {
+            const result = document.getElementById('dataResult');
+            try {
+                const { data, error } = await supabase
+                    .from('customers')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) throw error;
+                
+                result.innerHTML = `
+                    <div class="${data.length > 0 ? 'success' : 'info'}">
+                        ${data.length > 0 ? '✅' : 'ℹ️'} Customers (${data.length})
+                    </div>
+                    <pre>${JSON.stringify(data, null, 2)}</pre>
+                `;
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function testDashboardQuery() {
+            const result = document.getElementById('dashboardResult');
+            result.innerHTML = '<div class="info">Testing dashboard query...</div>';
+            
+            try {
+                // Query exactly like dashboard
+                const { data, error } = await supabase
+                    .from('orders')
+                    .select(`
+                        *,
+                        customers (
+                            name,
+                            phone,
+                            dorm,
+                            room
+                        ),
+                        order_items (
+                            quantity,
+                            price,
+                            subtotal,
+                            menu_items (
+                                name
+                            )
+                        )
+                    `)
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                result.innerHTML = `
+                    <div class="${data.length > 0 ? 'success' : 'info'}">
+                        ${data.length > 0 ? '✅' : 'ℹ️'} Dashboard Query Result (${data.length} orders)
+                    </div>
+                `;
+                
+                if (data.length > 0) {
+                    result.innerHTML += '<pre>' + JSON.stringify(data[0], null, 2) + '</pre>';
+                } else {
+                    result.innerHTML += '<div class="info">ไม่มีคำสั่งซื้อในระบบ - กดปุ่ม "สร้าง Order" ด้านล่าง</div>';
+                }
+                
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        async function createCompleteTestData() {
+            const result = document.getElementById('createResult');
+            result.innerHTML = '<div class="info">Creating test data...</div>';
+            
+            try {
+                // 1. Get first menu item
+                const { data: menuItems, error: menuError } = await supabase
+                    .from('menu_items')
+                    .select('*')
+                    .eq('is_available', true)
+                    .limit(2);
+                
+                if (menuError || !menuItems || menuItems.length === 0) {
+                    throw new Error('No menu items found! Please run SQL scripts first.');
+                }
+                
+                // 2. Create customer
+                const timestamp = Date.now();
+                const customerData = {
+                    name: 'ทดสอบ Dashboard ' + timestamp,
+                    phone: '09' + Math.floor(Math.random() * 100000000),
+                    dorm: 'หอ A',
+                    room: '101'
+                };
+                
+                const { data: customer, error: custError } = await supabase
+                    .from('customers')
+                    .insert([customerData])
+                    .select()
+                    .single();
+                
+                if (custError) throw custError;
+                
+                // 3. Create order
+                const orderData = {
+                    order_number: 'TEST' + timestamp.toString().slice(-6),
+                    customer_id: customer.id,
+                    total_amount: menuItems.reduce((sum, item) => sum + item.price, 0),
+                    status: 'pending',
+                    payment_method: 'cash',
+                    delivery_dorm: customerData.dorm,
+                    delivery_room: customerData.room,
+                    note: 'Test order from dashboard test'
+                };
+                
+                const { data: order, error: orderError } = await supabase
+                    .from('orders')
+                    .insert([orderData])
+                    .select()
+                    .single();
+                
+                if (orderError) throw orderError;
+                
+                // 4. Create order items
+                const orderItems = menuItems.map(item => ({
+                    order_id: order.id,
+                    menu_item_id: item.id,
+                    quantity: 1,
+                    price: item.price,
+                    subtotal: item.price
+                }));
+                
+                const { error: itemsError } = await supabase
+                    .from('order_items')
+                    .insert(orderItems);
+                
+                if (itemsError) throw itemsError;
+                
+                result.innerHTML = `
+                    <div class="success">
+                        ✅ สร้างข้อมูลทดสอบสำเร็จ!<br>
+                        Order: ${order.order_number}<br>
+                        Customer: ${customer.name}<br>
+                        Items: ${menuItems.map(i => i.name).join(', ')}<br>
+                        Total: ฿${order.total_amount}<br>
+                        <br>
+                        <strong>🔄 ไปที่ Admin Dashboard และ Refresh หน้า</strong>
+                    </div>
+                `;
+                
+                // Test query again
+                await testDashboardQuery();
+                
+            } catch (e) {
+                result.innerHTML = `<div class="error">❌ Error: ${e.message}</div>`;
+            }
+        }
+        
+        // Auto test on load
+        window.addEventListener('load', () => {
+            testConnection();
+        });
+    </script>
+</body>
+</html>

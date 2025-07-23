@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Admin Access - ครัวคุณหญิง</title>
+    <link rel="stylesheet" href="../shared/styles/admin.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #FFF8F3 0%, #FFE5D9 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+        
+        .fix-container {
+            background: white;
+            padding: 3rem;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(255,107,53,0.2);
+            width: 100%;
+            max-width: 600px;
+        }
+        
+        .fix-header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .fix-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .info-box {
+            background: var(--light-color);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .info-box h3 {
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+        
+        .current-user {
+            background: #e3f2fd;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+        }
+        
+        .fix-btn {
+            background: var(--gradient);
+            color: white;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-bottom: 1rem;
+        }
+        
+        .fix-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255,107,53,0.3);
+        }
+        
+        .fix-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .message {
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            display: none;
+            margin-bottom: 1rem;
+        }
+        
+        .message.success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            display: block;
+        }
+        
+        .message.error {
+            background: #ffebee;
+            color: #c62828;
+            display: block;
+        }
+        
+        .admin-list {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 1rem;
+        }
+        
+        .admin-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .admin-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="fix-container">
+        <div class="fix-header">
+            <h1>แก้ไขปัญหา Unauthorized Access</h1>
+            <p>ซิงค์ข้อมูล Auth กับ Admin Users</p>
+        </div>
+        
+        <div class="info-box">
+            <h3>⚠️ ปัญหาที่พบ</h3>
+            <p>คุณ login ผ่าน Supabase Auth สำเร็จ แต่ไม่มีข้อมูลในตาราง admin_users</p>
+            <p>ทำให้ระบบไม่รู้จักคุณเป็น Admin</p>
+        </div>
+        
+        <div class="current-user">
+            <h4>ข้อมูลปัจจุบัน:</h4>
+            <p id="currentEmail">กำลังตรวจสอบ...</p>
+        </div>
+        
+        <div class="message" id="message"></div>
+        
+        <button class="fix-btn" onclick="checkAuthUser()">
+            <i class="fas fa-search"></i> ตรวจสอบ Auth User
+        </button>
+        
+        <button class="fix-btn" onclick="fixAdminAccess()">
+            <i class="fas fa-wrench"></i> แก้ไขสิทธิ์ Admin
+        </button>
+        
+        <button class="fix-btn" onclick="listAllAdmins()">
+            <i class="fas fa-list"></i> ดู Admin ทั้งหมด
+        </button>
+        
+        <div id="adminList" class="admin-list" style="display: none;">
+            <h4>Admin Users ในระบบ:</h4>
+            <div id="adminListContent"></div>
+        </div>
+        
+        <div class="back-link" style="text-align: center; margin-top: 2rem;">
+            <a href="./login.html" style="color: var(--primary-color); text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> กลับไปหน้า Login
+            </a>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="../shared/config/supabase.js"></script>
+    <script>
+        // Check current auth user
+        async function checkAuthUser() {
+            const message = document.getElementById('message');
+            const currentEmail = document.getElementById('currentEmail');
+            
+            try {
+                // First check session
+                const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                
+                if (sessionError) throw sessionError;
+                
+                if (!session) {
+                    currentEmail.textContent = 'ไม่พบ Auth Session (กรุณา login ก่อน)';
+                    message.className = 'message error';
+                    message.textContent = '❌ Error: Auth session missing!';
+                    
+                    // Show login prompt
+                    setTimeout(() => {
+                        if (confirm('ไม่พบ session ต้องการไปหน้า login?')) {
+                            window.location.href = './login.html';
+                        }
+                    }, 1000);
+                    return;
+                }
+                
+                const user = session.user;
+                currentEmail.innerHTML = `
+                    <strong>Email:</strong> ${user.email}<br>
+                    <strong>ID:</strong> ${user.id}<br>
+                    <strong>Created:</strong> ${new Date(user.created_at).toLocaleString('th-TH')}
+                `;
+                
+                message.className = 'message success';
+                message.textContent = '✅ พบ Auth User: ' + user.email;
+            } catch (error) {
+                message.className = 'message error';
+                message.textContent = '❌ Error: ' + error.message;
+            }
+        }
+        
+        // Fix admin access
+        async function fixAdminAccess() {
+            const message = document.getElementById('message');
+            
+            try {
+                // First check session
+                const { data: { session }, error: sessionError } = await window.supabaseClient.auth.getSession();
+                
+                if (sessionError) throw sessionError;
+                if (!session) {
+                    message.className = 'message error';
+                    message.textContent = '❌ ไม่พบ session กรุณา login ก่อน';
+                    setTimeout(() => {
+                        window.location.href = './login.html';
+                    }, 2000);
+                    return;
+                }
+                
+                const user = session.user;
+                
+                // Check if admin exists
+                const { data: existingAdmin, error: checkError } = await window.supabaseClient
+                    .from('admin_users')
+                    .select('*')
+                    .eq('email', user.email)
+                    .single();
+                
+                if (checkError && checkError.code !== 'PGRST116') {
+                    throw checkError;
+                }
+                
+                if (existingAdmin) {
+                    // Update existing admin
+                    const { data, error } = await window.supabaseClient
+                        .from('admin_users')
+                        .update({ 
+                            is_active: true,
+                            role: 'super_admin',
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('email', user.email)
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    message.className = 'message success';
+                    message.textContent = '✅ อัพเดท Admin สำเร็จ! กำลังไปหน้า Dashboard...';
+                    
+                    setTimeout(() => {
+                        window.location.href = './dashboard.html';
+                    }, 2000);
+                } else {
+                    // Create new admin
+                    const { data, error } = await window.supabaseClient
+                        .from('admin_users')
+                        .insert([{
+                            email: user.email,
+                            password_hash: 'managed_by_supabase_auth',
+                            name: user.email.split('@')[0],
+                            role: 'super_admin',
+                            is_active: true
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (error) throw error;
+                    
+                    message.className = 'message success';
+                    message.textContent = '✅ สร้าง Admin ใหม่สำเร็จ! กำลังไปหน้า Dashboard...';
+                    
+                    setTimeout(() => {
+                        window.location.href = './dashboard.html';
+                    }, 2000);
+                }
+            } catch (error) {
+                message.className = 'message error';
+                message.textContent = '❌ Error: ' + error.message;
+            }
+        }
+        
+        // List all admins
+        async function listAllAdmins() {
+            const adminList = document.getElementById('adminList');
+            const adminListContent = document.getElementById('adminListContent');
+            
+            try {
+                const { data, error } = await window.supabaseClient
+                    .from('admin_users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    adminListContent.innerHTML = data.map(admin => `
+                        <div class="admin-item">
+                            <div>
+                                <strong>${admin.name || admin.email}</strong><br>
+                                <small>${admin.email}</small>
+                            </div>
+                            <div>
+                                ${admin.is_active ? '✅ Active' : '❌ Inactive'}<br>
+                                <small>${admin.role}</small>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    adminListContent.innerHTML = '<p>ไม่พบ Admin ในระบบ</p>';
+                }
+                
+                adminList.style.display = 'block';
+            } catch (error) {
+                adminListContent.innerHTML = '<p class="error">Error: ' + error.message + '</p>';
+                adminList.style.display = 'block';
+            }
+        }
+        
+        // Check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthUser();
+        });
+    </script>
+</body>
+</html>

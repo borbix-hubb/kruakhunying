@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ตั้งค่าฐานข้อมูล - ครัวคุณหญิง</title>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #e91e63;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 1px solid #e9ecef;
+        }
+        .step {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+        }
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: #e91e63;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+            flex-shrink: 0;
+        }
+        .step-content {
+            flex: 1;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .info {
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        .warning {
+            background: #fff3e0;
+            color: #e65100;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+        }
+        button {
+            background: #e91e63;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 5px;
+        }
+        button:hover {
+            background: #d81b60;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(233,30,99,0.3);
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .button-group {
+            text-align: center;
+            margin: 20px 0;
+        }
+        .code-block {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            margin: 10px 0;
+        }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #e91e63;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .result-item {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 4px solid #e91e63;
+            background: #fce4ec;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 ตั้งค่าฐานข้อมูล</h1>
+        <p class="subtitle">ระบบจะสร้างตารางและข้อมูลเริ่มต้นให้อัตโนมัติ</p>
+        
+        <div class="warning">
+            <strong>⚠️ สำคัญ:</strong> หน้านี้จะสร้างตารางใหม่ทั้งหมด หากมีข้อมูลเดิมอยู่จะไม่ถูกลบ
+        </div>
+        
+        <div class="section">
+            <h2>ขั้นตอนการติดตั้ง</h2>
+            
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-content">
+                    <strong>ตรวจสอบการเชื่อมต่อ</strong>
+                    <p>ตรวจสอบว่าเชื่อมต่อกับ Supabase ได้หรือไม่</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-content">
+                    <strong>สร้างตาราง</strong>
+                    <p>สร้างตารางทั้งหมดที่จำเป็น (6 ตาราง)</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-content">
+                    <strong>เพิ่มข้อมูลเมนู</strong>
+                    <p>เพิ่มเมนูอาหารเริ่มต้น 20 รายการ</p>
+                </div>
+            </div>
+            
+            <div class="step">
+                <div class="step-number">4</div>
+                <div class="step-content">
+                    <strong>ตั้งค่าความปลอดภัย</strong>
+                    <p>ตั้งค่า Row Level Security policies</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button id="setupBtn" onclick="startSetup()">
+                เริ่มการติดตั้ง
+            </button>
+            <button onclick="window.location.href='verify-data.html'">
+                ตรวจสอบข้อมูล
+            </button>
+        </div>
+        
+        <div id="progressSection" style="display: none;">
+            <div class="section">
+                <h3>ความคืบหน้า</h3>
+                <div id="progressLog"></div>
+            </div>
+        </div>
+        
+        <div id="resultSection" style="display: none;">
+            <div class="section">
+                <h3>ผลการติดตั้ง</h3>
+                <div id="resultLog"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+    <script src="shared/config/supabase.js"></script>
+    <script>
+        const supabase = window.supabaseClient;
+        let setupBtn = document.getElementById('setupBtn');
+        
+        function log(message, type = 'info') {
+            const progressLog = document.getElementById('progressLog');
+            const div = document.createElement('div');
+            div.className = type;
+            div.innerHTML = message;
+            progressLog.appendChild(div);
+        }
+        
+        async function startSetup() {
+            setupBtn.disabled = true;
+            setupBtn.innerHTML = 'กำลังติดตั้ง... <span class="loading"></span>';
+            
+            document.getElementById('progressSection').style.display = 'block';
+            document.getElementById('progressLog').innerHTML = '';
+            
+            try {
+                // Step 1: Test connection
+                log('🔌 ตรวจสอบการเชื่อมต่อ...', 'info');
+                const { error: connError } = await supabase
+                    .from('menu_categories')
+                    .select('count')
+                    .limit(1);
+                
+                if (connError && !connError.message.includes('does not exist')) {
+                    throw new Error('ไม่สามารถเชื่อมต่อ Supabase: ' + connError.message);
+                }
+                log('✅ เชื่อมต่อสำเร็จ', 'success');
+                
+                // Step 2: Create tables
+                log('🏗️ สร้างตาราง...', 'info');
+                await createTables();
+                
+                // Step 3: Insert data
+                log('📝 เพิ่มข้อมูลเริ่มต้น...', 'info');
+                await insertInitialData();
+                
+                // Step 4: Setup policies
+                log('🔒 ตั้งค่าความปลอดภัย...', 'info');
+                await setupPolicies();
+                
+                // Show results
+                await showResults();
+                
+            } catch (error) {
+                log('❌ เกิดข้อผิดพลาด: ' + error.message, 'error');
+            } finally {
+                setupBtn.disabled = false;
+                setupBtn.innerHTML = 'เริ่มการติดตั้งใหม่';
+            }
+        }
+        
+        async function createTables() {
+            const tables = [
+                {
+                    name: 'menu_categories',
+                    check: async () => {
+                        const { error } = await supabase.from('menu_categories').select('count').limit(1);
+                        return !error || error.message.includes('does not exist');
+                    }
+                },
+                {
+                    name: 'menu_items',
+                    check: async () => {
+                        const { error } = await supabase.from('menu_items').select('count').limit(1);
+                        return !error || error.message.includes('does not exist');
+                    }
+                },
+                {
+                    name: 'customers',
+                    check: async () => {
+                        const { error } = await supabase.from('customers').select('count').limit(1);
+                        return !error || error.message.includes('does not exist');
+                    }
+                },
+                {
+                    name: 'orders',
+                    check: async () => {
+                        const { error } = await supabase.from('orders').select('count').limit(1);
+                        return !error || error.message.includes('does not exist');
+                    }
+                },
+                {
+                    name: 'order_items',
+                    check: async () => {
+                        const { error } = await supabase.from('order_items').select('count').limit(1);
+                        return !error || error.message.includes('does not exist');
+                    }
+                },
+                {
+                    name: 'admin_users',
+                    check: async () => {
+                        const { error } = await supabase.from('admin_users').select('count').limit(1);
+                        return !error || error.message.includes('does not exist');
+                    }
+                }
+            ];
+            
+            for (const table of tables) {
+                const needsCreation = await table.check();
+                if (needsCreation) {
+                    log(`   ⚠️ ตาราง ${table.name} ยังไม่มี - ต้องสร้างใน SQL Editor`, 'warning');
+                } else {
+                    log(`   ✅ ตาราง ${table.name} พร้อมใช้งาน`, 'success');
+                }
+            }
+        }
+        
+        async function insertInitialData() {
+            // Check if categories exist
+            const { data: categories, error: catError } = await supabase
+                .from('menu_categories')
+                .select('*');
+            
+            if (!categories || categories.length === 0) {
+                log('   ⚠️ ยังไม่มีหมวดหมู่ - ต้องเพิ่มผ่าน SQL Editor', 'warning');
+            } else {
+                log(`   ✅ พบหมวดหมู่ ${categories.length} หมวด`, 'success');
+            }
+            
+            // Check if menu items exist
+            const { data: items, error: itemError } = await supabase
+                .from('menu_items')
+                .select('*');
+            
+            if (!items || items.length === 0) {
+                log('   ⚠️ ยังไม่มีเมนู - ต้องเพิ่มผ่าน SQL Editor', 'warning');
+            } else {
+                log(`   ✅ พบเมนู ${items.length} รายการ`, 'success');
+            }
+        }
+        
+        async function setupPolicies() {
+            log('   ℹ️ RLS Policies ต้องตั้งค่าผ่าน SQL Editor', 'info');
+        }
+        
+        async function showResults() {
+            document.getElementById('resultSection').style.display = 'block';
+            const resultLog = document.getElementById('resultLog');
+            
+            // Show SQL to run
+            resultLog.innerHTML = `
+                <div class="info">
+                    <strong>📋 ขั้นตอนต่อไป:</strong><br>
+                    1. ไปที่ Supabase Dashboard > SQL Editor<br>
+                    2. Copy ไฟล์ <code>database/setup-complete.sql</code><br>
+                    3. วางใน SQL Editor แล้วกด RUN<br>
+                    4. กลับมากดปุ่ม "ตรวจสอบข้อมูล" เพื่อดูผล
+                </div>
+                
+                <div class="code-block">
+-- ตัวอย่าง SQL ที่ต้องรัน
+-- ดูไฟล์เต็มได้ที่ database/setup-complete.sql
+
+CREATE TABLE IF NOT EXISTS menu_categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(50) NOT NULL UNIQUE,
+    slug VARCHAR(50) NOT NULL UNIQUE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc', NOW())
+);
+
+-- ... และตารางอื่นๆ
+                </div>
+                
+                <div class="button-group">
+                    <button onclick="window.open('${supabase.supabaseUrl}/project/default/sql', '_blank')">
+                        เปิด SQL Editor
+                    </button>
+                    <button onclick="window.location.href='admin/dashboard.html'">
+                        ไปที่ Admin Dashboard
+                    </button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
