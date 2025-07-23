@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Clock, ChefHat, CheckCircle, Truck } from 'lucide-react';
+import { getSimplifiedStatusText, getSimplifiedStatusColor, getSimplifiedStatusIcon, OrderStatus as OrderStatusType } from '@/lib/orderStatus';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
@@ -48,10 +49,9 @@ const OrderStatus = () => {
       return;
     }
 
-    // Check if this order belongs to the current user (via localStorage)
-    const savedOrderIds = localStorage.getItem('userOrderIds');
-    if (savedOrderIds) {
-      const orderIds = JSON.parse(savedOrderIds);
+    // Check if this order belongs to the current browser
+    import('@/lib/browserStorage').then(({ getOrderIds }) => {
+      const orderIds = getOrderIds();
       if (!orderIds.includes(orderId) && !user) {
         toast({
           title: "ไม่พบคำสั่งซื้อ",
@@ -61,7 +61,7 @@ const OrderStatus = () => {
         navigate('/menu');
         return;
       }
-    }
+    });
 
     fetchOrderData();
 
@@ -114,10 +114,11 @@ const OrderStatus = () => {
         .eq('id', orderId)
         .single();
 
-      // If no user is logged in, verify order ID is in localStorage
+      // If no user is logged in, verify order ID is in browser storage
       if (!user && orderData) {
-        const savedOrderIds = localStorage.getItem('userOrderIds');
-        if (!savedOrderIds || !JSON.parse(savedOrderIds).includes(orderId)) {
+        const { getOrderIds } = await import('@/lib/browserStorage');
+        const orderIds = getOrderIds();
+        if (!orderIds.includes(orderId)) {
           throw new Error('Unauthorized access to order');
         }
       }
@@ -159,55 +160,16 @@ const OrderStatus = () => {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
+    const iconName = getSimplifiedStatusIcon(status as OrderStatusType);
+    switch (iconName) {
+      case 'Clock':
         return <Clock className="h-5 w-5" />;
-      case 'confirmed':
-        return <CheckCircle className="h-5 w-5" />;
-      case 'preparing':
+      case 'ChefHat':
         return <ChefHat className="h-5 w-5" />;
-      case 'ready':
-        return <CheckCircle className="h-5 w-5" />;
-      case 'delivering':
-        return <Truck className="h-5 w-5" />;
-      case 'completed':
+      case 'CheckCircle':
         return <CheckCircle className="h-5 w-5" />;
       default:
         return <Clock className="h-5 w-5" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'pending': 'รอคิว',
-      'confirmed': 'ยืนยันแล้ว',
-      'preparing': 'กำลังทำ',
-      'ready': 'เสร็จแล้ว',
-      'delivering': 'จัดส่ง',
-      'completed': 'เสร็จสิ้น',
-      'cancelled': 'ยกเลิก'
-    };
-    return statusMap[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'confirmed':
-        return 'bg-blue-500';
-      case 'preparing':
-        return 'bg-orange-500';
-      case 'ready':
-        return 'bg-green-500';
-      case 'delivering':
-        return 'bg-purple-500';
-      case 'completed':
-        return 'bg-green-600';
-      case 'cancelled':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
     }
   };
 
@@ -261,9 +223,13 @@ const OrderStatus = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             กลับ
           </Button>
-          <div>
+          <div className="flex-1">
             <h1 className="text-2xl font-bold text-primary font-kanit">สถานะคำสั่งซื้อ</h1>
             <p className="text-sm text-muted-foreground font-kanit">#{order.order_number}</p>
+          </div>
+          <div className="text-right">
+            <p className="text-sm text-muted-foreground font-kanit">เบอร์ติดต่อ</p>
+            <p className="text-lg font-bold font-kanit text-primary">📱 {order.phone_number}</p>
           </div>
         </div>
       </header>
@@ -278,11 +244,11 @@ const OrderStatus = () => {
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-full text-white ${getStatusColor(order.status)}`}>
+                  <div className={`p-2 rounded-full text-white ${getSimplifiedStatusColor(order.status as OrderStatusType)}`}>
                     {getStatusIcon(order.status)}
                   </div>
                   <div>
-                    <h3 className="font-semibold text-lg font-kanit">{getStatusText(order.status)}</h3>
+                    <h3 className="font-semibold text-lg font-kanit">{getSimplifiedStatusText(order.status as OrderStatusType)}</h3>
                     <p className="text-sm text-muted-foreground font-kanit">
                       อัปเดตล่าสุด: {new Date(order.created_at).toLocaleString('th-TH')}
                     </p>

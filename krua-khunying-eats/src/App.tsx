@@ -11,6 +11,7 @@ import Menu from "./pages/Menu";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import OrderStatus from "./pages/OrderStatus";
+import OrdersList from "./pages/OrdersList";
 import AdminDashboard from "./pages/AdminDashboard";
 import Contact from "./pages/Contact";
 import NotFound from "./pages/NotFound";
@@ -31,7 +32,8 @@ function App() {
               <Route path="/menu" element={<Menu />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/checkout" element={<Checkout />} />
-              <Route path="/order-status/:orderId" element={<OrderStatus />} />
+              <Route path="/order/:orderId" element={<OrderStatus />} />
+              <Route path="/orders" element={<OrdersList />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
               <Route path="/contact" element={<Contact />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

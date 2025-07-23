@@ -5,6 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getOrderIds, cleanupCompletedOrders } from '@/lib/browserStorage';
+import { getSimplifiedStatusText, getSimplifiedStatusColor, OrderStatus as OrderStatusType } from '@/lib/orderStatus';
 
 interface Order {
   id: string;
@@ -19,43 +21,19 @@ const OrderTrackingButton = () => {
   const [activeOrders, setActiveOrders] = useState<Order[]>([]);
   const [latestOrder, setLatestOrder] = useState<Order | null>(null);
 
-  const getStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'pending': 'รอคิว',
-      'confirmed': 'ยืนยันแล้ว',
-      'preparing': 'กำลังทำ',
-      'ready': 'เสร็จแล้ว',
-      'delivering': 'จัดส่ง',
-      'completed': 'เสร็จสิ้น',
-      'cancelled': 'ยกเลิก'
-    };
-    return statusMap[status] || status;
+  const getStatusTextColor = (status: string) => {
+    const color = getSimplifiedStatusColor(status as OrderStatusType);
+    return color
+      .replace('bg-yellow-500', 'text-yellow-600')
+      .replace('bg-orange-500', 'text-orange-600')
+      .replace('bg-green-500', 'text-green-600')
+      .replace('bg-gray-500', 'text-gray-600');
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'text-yellow-600';
-      case 'confirmed':
-        return 'text-blue-600';
-      case 'preparing':
-        return 'text-orange-600';
-      case 'ready':
-        return 'text-green-600';
-      case 'delivering':
-        return 'text-purple-600';
-      default:
-        return 'text-gray-600';
-    }
-  };
-
-  // Fetch active orders from localStorage
+  // Fetch active orders from browser-specific storage
   const fetchActiveOrders = async () => {
     try {
-      const savedOrderIds = localStorage.getItem('userOrderIds');
-      if (!savedOrderIds) return;
-      
-      const orderIds = JSON.parse(savedOrderIds);
+      const orderIds = getOrderIds();
       if (orderIds.length === 0) return;
 
       const { data, error } = await supabase
@@ -69,6 +47,14 @@ const OrderTrackingButton = () => {
         setActiveOrders(data);
         if (data.length > 0) {
           setLatestOrder(data[0]);
+        }
+        
+        // Cleanup completed orders from storage
+        const completedOrderIds = orderIds.filter(id => 
+          !data.some(order => order.id === id)
+        );
+        if (completedOrderIds.length > 0) {
+          cleanupCompletedOrders(completedOrderIds);
         }
       }
     } catch (error) {
@@ -145,17 +131,7 @@ const OrderTrackingButton = () => {
   }, [activeOrders, latestOrder, toast]);
 
   const handleClick = () => {
-    if (latestOrder) {
-      navigate(`/order/${latestOrder.id}`);
-    } else if (activeOrders.length > 0) {
-      navigate(`/order/${activeOrders[0].id}`);
-    } else {
-      // Show toast if no orders
-      toast({
-        title: "ไม่มีคำสั่งซื้อ",
-        description: "คุณยังไม่มีคำสั่งซื้อที่ต้องติดตาม"
-      });
-    }
+    navigate('/orders');
   };
 
   return (
@@ -173,8 +149,8 @@ const OrderTrackingButton = () => {
           (ไม่มีคำสั่งซื้อ)
         </span>
       ) : latestOrder ? (
-        <span className={`ml-2 text-xs ${getStatusColor(latestOrder.status)}`}>
-          ({getStatusText(latestOrder.status)})
+        <span className={`ml-2 text-xs ${getStatusTextColor(latestOrder.status)}`}>
+          ({getSimplifiedStatusText(latestOrder.status as OrderStatusType)})
         </span>
       ) : null}
       {activeOrders.length > 1 && (

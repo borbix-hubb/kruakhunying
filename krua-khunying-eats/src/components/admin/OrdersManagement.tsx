@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Clock, ChefHat, CheckCircle, Truck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { getSimplifiedStatusText, getSimplifiedStatusColor, getSimplifiedStatusIcon, OrderStatus as OrderStatusType } from '@/lib/orderStatus';
 
 interface Order {
   id: string;
@@ -55,7 +56,7 @@ const OrdersManagement = ({ orders, onOrderUpdate }: OrdersManagementProps) => {
 
       toast({
         title: "อัปเดตสถานะสำเร็จ",
-        description: `สถานะถูกเปลี่ยนเป็น ${getStatusText(newStatus)}`
+        description: `สถานะถูกเปลี่ยนเป็น ${getSimplifiedStatusText(newStatus as OrderStatusType)}`
       });
 
       onOrderUpdate();
@@ -70,55 +71,16 @@ const OrdersManagement = ({ orders, onOrderUpdate }: OrdersManagementProps) => {
   };
 
   const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
+    const iconName = getSimplifiedStatusIcon(status as OrderStatusType);
+    switch (iconName) {
+      case 'Clock':
         return <Clock className="h-4 w-4" />;
-      case 'confirmed':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'preparing':
+      case 'ChefHat':
         return <ChefHat className="h-4 w-4" />;
-      case 'ready':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'delivering':
-        return <Truck className="h-4 w-4" />;
-      case 'completed':
+      case 'CheckCircle':
         return <CheckCircle className="h-4 w-4" />;
       default:
         return <Clock className="h-4 w-4" />;
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    const statusMap: { [key: string]: string } = {
-      'pending': 'รอคิว',
-      'confirmed': 'ยืนยันแล้ว',
-      'preparing': 'กำลังทำ',
-      'ready': 'เสร็จแล้ว',
-      'delivering': 'จัดส่ง',
-      'completed': 'เสร็จสิ้น',
-      'cancelled': 'ยกเลิก'
-    };
-    return statusMap[status] || status;
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return 'bg-yellow-500';
-      case 'confirmed':
-        return 'bg-blue-500';
-      case 'preparing':
-        return 'bg-orange-500';
-      case 'ready':
-        return 'bg-green-500';
-      case 'delivering':
-        return 'bg-purple-500';
-      case 'completed':
-        return 'bg-green-600';
-      case 'cancelled':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
     }
   };
 
@@ -155,11 +117,8 @@ const OrdersManagement = ({ orders, onOrderUpdate }: OrdersManagementProps) => {
           <SelectContent>
             <SelectItem value="all">ทั้งหมด</SelectItem>
             <SelectItem value="pending">รอคิว</SelectItem>
-            <SelectItem value="confirmed">ยืนยันแล้ว</SelectItem>
             <SelectItem value="preparing">กำลังทำ</SelectItem>
-            <SelectItem value="ready">เสร็จแล้ว</SelectItem>
-            <SelectItem value="delivering">จัดส่ง</SelectItem>
-            <SelectItem value="completed">เสร็จสิ้น</SelectItem>
+            <SelectItem value="completed">เสร็จแล้ว</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -176,9 +135,9 @@ const OrdersManagement = ({ orders, onOrderUpdate }: OrdersManagementProps) => {
                     {order.profiles?.full_name || 'ไม่ระบุชื่อ'} • {new Date(order.created_at).toLocaleString('th-TH')}
                   </p>
                 </div>
-                <Badge className={`${getStatusColor(order.status)} text-white font-kanit`}>
+                <Badge className={`${getSimplifiedStatusColor(order.status as OrderStatusType)} text-white font-kanit`}>
                   {getStatusIcon(order.status)}
-                  <span className="ml-1">{getStatusText(order.status)}</span>
+                  <span className="ml-1">{getSimplifiedStatusText(order.status as OrderStatusType)}</span>
                 </Badge>
               </div>
             </CardHeader>
@@ -239,12 +198,8 @@ const OrdersManagement = ({ orders, onOrderUpdate }: OrdersManagementProps) => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="pending">รอคิว</SelectItem>
-                          <SelectItem value="confirmed">ยืนยันแล้ว</SelectItem>
                           <SelectItem value="preparing">กำลังทำ</SelectItem>
-                          <SelectItem value="ready">เสร็จแล้ว</SelectItem>
-                          <SelectItem value="delivering">จัดส่ง</SelectItem>
-                          <SelectItem value="completed">เสร็จสิ้น</SelectItem>
-                          <SelectItem value="cancelled">ยกเลิก</SelectItem>
+                          <SelectItem value="completed">เสร็จแล้ว</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>

@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Minus, Plus, Trash2, ArrowLeft } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
+import { getCartKey } from '@/lib/browserStorage';
 
 interface CartItem {
   id: string;
@@ -30,8 +31,9 @@ const Cart = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   useEffect(() => {
-    // โหลดข้อมูลตะกร้าจาก localStorage หรือ state management
-    const savedCart = localStorage.getItem('cart');
+    // โหลดข้อมูลตะกร้าจาก browser-specific storage
+    const cartKey = getCartKey();
+    const savedCart = localStorage.getItem(cartKey);
     if (savedCart) {
       setCartItems(JSON.parse(savedCart));
     }
@@ -47,7 +49,7 @@ const Cart = () => {
       item.cartItemId === cartItemId ? { ...item, quantity: newQuantity } : item
     );
     setCartItems(updatedItems);
-    localStorage.setItem('cart', JSON.stringify(updatedItems));
+    localStorage.setItem(getCartKey(), JSON.stringify(updatedItems));
   };
 
   const removeItem = (cartItemId: string) => {
@@ -66,7 +68,7 @@ const Cart = () => {
       item.id === itemId ? { ...item, special_requests: requests } : item
     );
     setCartItems(updatedItems);
-    localStorage.setItem('cart', JSON.stringify(updatedItems));
+    localStorage.setItem(getCartKey(), JSON.stringify(updatedItems));
   };
 
   const calculateTotal = () => {

@@ -39,12 +39,15 @@ const Checkout = () => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    const savedCart = localStorage.getItem('cart');
-    if (savedCart) {
-      setCartItems(JSON.parse(savedCart));
-    } else {
-      navigate('/cart');
-    }
+    import('@/lib/browserStorage').then(({ getCartKey }) => {
+      const cartKey = getCartKey();
+      const savedCart = localStorage.getItem(cartKey);
+      if (savedCart) {
+        setCartItems(JSON.parse(savedCart));
+      } else {
+        navigate('/cart');
+      }
+    });
   }, [navigate]);
 
   const calculateTotal = () => {
@@ -145,14 +148,12 @@ const Checkout = () => {
         throw itemsError;
       }
 
-      // เก็บ order ID ใน localStorage
-      const savedOrderIds = localStorage.getItem('userOrderIds');
-      const orderIds = savedOrderIds ? JSON.parse(savedOrderIds) : [];
-      orderIds.push(order.id);
-      localStorage.setItem('userOrderIds', JSON.stringify(orderIds));
+      // เก็บ order ID ใน browser-specific storage
+      const { saveOrderId, getCartKey } = await import('@/lib/browserStorage');
+      saveOrderId(order.id);
       
       // ลบตะกร้าสินค้า
-      localStorage.removeItem('cart');
+      localStorage.removeItem(getCartKey());
 
       const statusMessage = paymentMethod === 'transfer' ? 'ยืนยันคำสั่งซื้อแล้ว!' : 'สั่งอาหารสำเร็จ!';
       toast({
@@ -160,7 +161,7 @@ const Checkout = () => {
         description: `เลขที่คำสั่งซื้อ: ${order.order_number}`
       });
 
-      navigate(`/order-status/${order.id}`);
+      navigate(`/order/${order.id}`);
 
     } catch (error) {
       console.error('Error creating order:', error);
