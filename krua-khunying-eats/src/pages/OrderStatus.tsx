@@ -43,9 +43,24 @@ const OrderStatus = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user || !orderId) {
+    if (!orderId) {
       navigate('/menu');
       return;
+    }
+
+    // Check if this order belongs to the current user (via localStorage)
+    const savedOrderIds = localStorage.getItem('userOrderIds');
+    if (savedOrderIds) {
+      const orderIds = JSON.parse(savedOrderIds);
+      if (!orderIds.includes(orderId) && !user) {
+        toast({
+          title: "ไม่พบคำสั่งซื้อ",
+          description: "คุณไม่มีสิทธิ์ดูคำสั่งซื้อนี้",
+          variant: "destructive"
+        });
+        navigate('/menu');
+        return;
+      }
     }
 
     fetchOrderData();
@@ -92,12 +107,25 @@ const OrderStatus = () => {
   const fetchOrderData = async () => {
     try {
       // Fetch order details
-      const { data: orderData, error: orderError } = await supabase
+      // First try to fetch order without user_id check
+      let { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select('*')
         .eq('id', orderId)
-        .eq('user_id', user?.id)
         .single();
+
+      // If no user is logged in, verify order ID is in localStorage
+      if (!user && orderData) {
+        const savedOrderIds = localStorage.getItem('userOrderIds');
+        if (!savedOrderIds || !JSON.parse(savedOrderIds).includes(orderId)) {
+          throw new Error('Unauthorized access to order');
+        }
+      }
+      
+      // If user is logged in, verify ownership
+      if (user && orderData && orderData.user_id !== user.id) {
+        throw new Error('Unauthorized access to order');
+      }
 
       if (orderError) throw orderError;
 

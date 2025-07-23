@@ -145,6 +145,12 @@ const Checkout = () => {
         throw itemsError;
       }
 
+      // เก็บ order ID ใน localStorage
+      const savedOrderIds = localStorage.getItem('userOrderIds');
+      const orderIds = savedOrderIds ? JSON.parse(savedOrderIds) : [];
+      orderIds.push(order.id);
+      localStorage.setItem('userOrderIds', JSON.stringify(orderIds));
+      
       // ลบตะกร้าสินค้า
       localStorage.removeItem('cart');
 

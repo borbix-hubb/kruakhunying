@@ -3,12 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Star, Plus, LogOut, ShoppingCart, Clock } from 'lucide-react';
+import { Star, Plus, LogOut, ShoppingCart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import BaseLayout from '@/components/layout/BaseLayout';
 import MenuItemOptionsModal from '@/components/MenuItemOptionsModal';
+import OrderTrackingButton from '@/components/OrderTrackingButton';
 
 interface MenuItem {
   id: string;
@@ -59,13 +60,11 @@ const Menu = () => {
   const [cart, setCart] = useState<{[key: string]: number}>({});
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isOptionsModalOpen, setIsOptionsModalOpen] = useState(false);
-  const [latestOrderId, setLatestOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMenuData();
     loadCart();
-    fetchLatestOrder();
-  }, [user]);
+  }, []);
 
   const loadCart = () => {
     const savedCart = localStorage.getItem('cart');
@@ -79,25 +78,6 @@ const Menu = () => {
     }
   };
 
-  const fetchLatestOrder = async () => {
-    if (!user) return;
-    
-    try {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('id')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .single();
-
-      if (data && !error) {
-        setLatestOrderId(data.id);
-      }
-    } catch (error) {
-      console.error('Error fetching latest order:', error);
-    }
-  };
 
   const fetchMenuData = async () => {
     try {
@@ -256,11 +236,6 @@ const Menu = () => {
     navigate('/cart');
   };
 
-  const goToOrderStatus = () => {
-    if (latestOrderId) {
-      navigate(`/order/${latestOrderId}`);
-    }
-  };
 
   const filteredItems = menuItems.filter(item => {
     let matches = true;
@@ -312,18 +287,7 @@ const Menu = () => {
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
-            {latestOrderId && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                className="font-kanit"
-                onClick={goToOrderStatus}
-              >
-                <Clock className="h-4 w-4 mr-1 sm:mr-2" />
-                <span className="hidden sm:inline">สถานะคำสั่งซื้อ</span>
-                <span className="sm:hidden">สถานะ</span>
-              </Button>
-            )}
+            <OrderTrackingButton />
             
             <Button 
               variant="outline" 
